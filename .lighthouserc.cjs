@@ -42,7 +42,7 @@ module.exports = {
     assert: {
       assertions: {
         // ── Overall score ────────────────────────────────────────────────
-        'categories:performance': ['error', { minScore: 0.8 }],
+        'categories:performance': ['error', { minScore: 0.9 }],
         'categories:accessibility': ['warn', { minScore: 0.9 }],
         'categories:best-practices': ['warn', { minScore: 0.9 }],
 
@@ -59,8 +59,8 @@ module.exports = {
           { maxNumericValue: 2500, aggregationMethod: 'optimistic' },
         ],
 
-        /** Time To Interactive: fully interactive within 4 s */
-        interactive: ['error', { maxNumericValue: 4000, aggregationMethod: 'optimistic' }],
+        /** Time To Interactive: fully interactive within 3.8 s */
+        interactive: ['error', { maxNumericValue: 3800, aggregationMethod: 'optimistic' }],
 
         /** Total Blocking Time: main-thread blocked < 250 ms */
         'total-blocking-time': ['error', { maxNumericValue: 250, aggregationMethod: 'optimistic' }],

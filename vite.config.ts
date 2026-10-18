@@ -1,7 +1,8 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import { readFileSync } from 'fs'
+import { promises as fsPromises, readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
+import { brotliCompressSync } from 'zlib'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 
@@ -60,11 +61,46 @@ function generatePreloadHints(): Plugin {
   }
 }
 
+/**
+ * Generates pre-compressed Brotli files (.br) for all built static assets (#354).
+ */
+function brotliCompressionPlugin(): Plugin {
+  return {
+    name: 'brotli-compression',
+    apply: 'build',
+    enforce: 'post',
+    async closeBundle() {
+      const distDir = resolve(__dirname, 'dist')
+      const assetsDir = resolve(distDir, 'assets')
+      if (!existsSync(assetsDir)) return
+
+      try {
+        const files = await fsPromises.readdir(assetsDir)
+        for (const file of files) {
+          if (
+            /\.(js|css|html|svg|json)$/.test(file) &&
+            !file.endsWith('.br') &&
+            !file.endsWith('.gz')
+          ) {
+            const filePath = resolve(assetsDir, file)
+            const content = await fsPromises.readFile(filePath)
+            const compressed = brotliCompressSync(content)
+            await fsPromises.writeFile(`${filePath}.br`, compressed)
+          }
+        }
+      } catch {
+        // Ignore if assets directory does not exist
+      }
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     react(),
     inlineCriticalCss(),
     generatePreloadHints(),
+    brotliCompressionPlugin(),
     visualizer({ filename: 'stats.html', gzipSize: true, brotliSize: true, template: 'treemap' }),
     visualizer({
       filename: 'stats.json',
@@ -221,27 +257,58 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        // Code splitting by features
+        // Code splitting by features and optimized vendor chunking (#353)
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('three') || id.includes('@react-three')) {
-              return 'feature-three'
-            }
-            if (id.includes('@stellar') || id.includes('@albedo-link')) {
-              return 'feature-stellar'
-            }
-            // stellar-sdk 17 no longer inlines its crypto/XDR/encoding helpers into
-            // @stellar/stellar-base; they are separate packages now. Keep them in the
-            // Stellar feature chunk so they load with the SDK instead of growing the
-            // vendor chunk every page downloads.
-            if (STELLAR_SDK_DEPENDENCIES.some((dep) => id.includes(`/node_modules/${dep}/`))) {
-              return 'feature-stellar'
-            }
-            if (id.includes('react') || id.includes('react-router') || id.includes('react-dom')) {
-              return 'react-vendor'
-            }
-            return 'vendor'
+          if (!id.includes('node_modules')) return
+
+          // Three.js, React Three Fiber & postprocessing
+          if (
+            id.includes('/node_modules/three/') ||
+            id.includes('/node_modules/@react-three/') ||
+            id.includes('/node_modules/postprocessing/')
+          ) {
+            return 'feature-three'
           }
+
+          // Wallets & Hardware wallet protocols
+          if (
+            id.includes('/node_modules/@walletconnect/') ||
+            id.includes('/node_modules/@ledgerhq/')
+          ) {
+            return 'vendor-wallets'
+          }
+
+          // Sentry error tracking
+          if (id.includes('/node_modules/@sentry/')) {
+            return 'vendor-sentry'
+          }
+
+          // Stellar SDK and its exclusive sub-dependencies
+          if (
+            id.includes('/node_modules/@stellar/') ||
+            id.includes('/node_modules/@albedo-link/') ||
+            STELLAR_SDK_DEPENDENCIES.some((dep) => id.includes(`/node_modules/${dep}/`))
+          ) {
+            return 'feature-stellar'
+          }
+
+          // React & routing runtime
+          if (
+            id.includes('/node_modules/react/') ||
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('/node_modules/react-router/') ||
+            id.includes('/node_modules/react-router-dom/') ||
+            id.includes('/node_modules/scheduler/')
+          ) {
+            return 'react-vendor'
+          }
+
+          // Heavy UI and canvas capture utilities
+          if (id.includes('/node_modules/html2canvas/')) {
+            return 'vendor-html2canvas'
+          }
+
+          return 'vendor'
         },
       },
     },

@@ -15,7 +15,14 @@
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
 
-    <!-- Preload critical fonts and icons to reduce LCP and eliminate CLS -->
+    <!-- Preload critical fonts and icons to reduce LCP and eliminate CLS (#354, #379) -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="https://fonts.gstatic.com/s/inter/v18/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2"
+      crossorigin="anonymous"
+    />
     <link
       rel="preload"
       as="style"

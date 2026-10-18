@@ -1,90 +1,106 @@
 {
-  "timestamp": "2026-10-18T02:00:29.469Z",
+  "timestamp": "2026-10-18T16:30:22.435Z",
   "total": {
-    "raw": 3629621,
-    "gzip": 1023806,
-    "brotli": 844515,
+    "raw": 3793827,
+    "gzip": 1068354,
+    "brotli": 891965,
     "formatted": {
-      "raw": "3.46 MB",
-      "gzip": "999.8 kB",
-      "brotli": "824.7 kB"
+      "raw": "3.62 MB",
+      "gzip": "1.02 MB",
+      "brotli": "871.1 kB"
     }
   },
   "css": {
-    "raw": 36816,
-    "gzip": 8265,
+    "raw": 39344,
+    "gzip": 9000,
     "formatted": {
-      "raw": "36.0 kB",
-      "gzip": "8.1 kB"
+      "raw": "38.4 kB",
+      "gzip": "8.8 kB"
     }
   },
   "chunks": [
     {
-      "file": "assets/vendor-Ddf_Naun.js",
-      "name": "vendor-Ddf_Naun.js",
-      "category": "vendor",
-      "raw": 1442741,
-      "gzip": 438940,
-      "brotli": 354749
-    },
-    {
-      "file": "assets/feature-three-CQC-Qe5G.js",
-      "name": "feature-three-CQC-Qe5G.js",
+      "file": "dist\\assets\\feature-three-CY4beIkn.js",
+      "name": "feature-three-CY4beIkn.js",
       "category": "feature-three",
-      "raw": 912693,
-      "gzip": 248076,
-      "brotli": 204049
+      "raw": 977990,
+      "gzip": 261636,
+      "brotli": 215174
     },
     {
-      "file": "assets/feature-stellar-B0zG1b32.js",
-      "name": "feature-stellar-B0zG1b32.js",
+      "file": "dist\\assets\\vendor-_Xmu2LzS.js",
+      "name": "vendor-_Xmu2LzS.js",
+      "category": "vendor",
+      "raw": 577717,
+      "gzip": 197571,
+      "brotli": 164951
+    },
+    {
+      "file": "dist\\assets\\feature-stellar-CCnIZkIJ.js",
+      "name": "feature-stellar-CCnIZkIJ.js",
       "category": "feature-stellar",
-      "raw": 671344,
-      "gzip": 144644,
-      "brotli": 118339
+      "raw": 818038,
+      "gzip": 180512,
+      "brotli": 147531
     },
     {
-      "file": "assets/react-vendor-C-GUp3Bp.js",
-      "name": "react-vendor-C-GUp3Bp.js",
+      "file": "dist\\assets\\vendor-wallets-CI4zGnHw.js",
+      "name": "vendor-wallets-CI4zGnHw.js",
+      "category": "vendor",
+      "raw": 388698,
+      "gzip": 113717,
+      "brotli": 93490
+    },
+    {
+      "file": "dist\\assets\\vendor-sentry-De-cYpYq.js",
+      "name": "vendor-sentry-De-cYpYq.js",
+      "category": "vendor",
+      "raw": 253839,
+      "gzip": 84577,
+      "brotli": 72955
+    },
+    {
+      "file": "dist\\assets\\react-vendor-YIkS25dB.js",
+      "name": "react-vendor-YIkS25dB.js",
       "category": "react-vendor",
-      "raw": 258327,
-      "gzip": 83127,
-      "brotli": 71810
+      "raw": 209743,
+      "gzip": 66211,
+      "brotli": 57159
     },
     {
-      "file": "assets/App-BNfq612S.js",
-      "name": "App-BNfq612S.js",
+      "file": "dist\\assets\\vendor-html2canvas-k0ITeQhV.js",
+      "name": "vendor-html2canvas-k0ITeQhV.js",
+      "category": "vendor",
+      "raw": 201091,
+      "gzip": 47476,
+      "brotli": 38436
+    },
+    {
+      "file": "dist\\assets\\App-UrIMjTRL.js",
+      "name": "App-UrIMjTRL.js",
       "category": "other",
-      "raw": 89873,
-      "gzip": 26665,
-      "brotli": 23106
+      "raw": 91763,
+      "gzip": 27078,
+      "brotli": 23427
     },
     {
-      "file": "assets/NebulaView-BEBg9SPP.js",
-      "name": "NebulaView-BEBg9SPP.js",
+      "file": "dist\\assets\\index-B6d-eaFg.js",
+      "name": "index-B6d-eaFg.js",
+      "category": "main",
+      "raw": 52733,
+      "gzip": 17763,
+      "brotli": 15670
+    },
+    {
+      "file": "dist\\assets\\ShipDashboard-BQ3WmIEQ.js",
+      "name": "ShipDashboard-BQ3WmIEQ.js",
       "category": "other",
-      "raw": 48473,
-      "gzip": 16650,
-      "brotli": 14630
+      "raw": 46112,
+      "gzip": 14788,
+      "brotli": 13106
     },
     {
-      "file": "assets/ShipDashboard-Bme7tFPh.js",
-      "name": "ShipDashboard-Bme7tFPh.js",
-      "category": "other",
-      "raw": 45903,
-      "gzip": 14694,
-      "brotli": 13038
-    },
-    {
-      "file": "assets/env-CdBoBB9Y.js",
-      "name": "env-CdBoBB9Y.js",
-      "category": "other",
-      "raw": 31552,
-      "gzip": 9254,
-      "brotli": 8243
-    },
-    {
-      "file": "workbox-d835d9c0.js",
+      "file": "dist\\workbox-d835d9c0.js",
       "name": "workbox-d835d9c0.js",
       "category": "other",
       "raw": 23353,
@@ -92,92 +108,124 @@
       "brotli": 7122
     },
     {
-      "file": "assets/Marketplace-C8wzR5lD.js",
-      "name": "Marketplace-C8wzR5lD.js",
+      "file": "dist\\assets\\env-DKZPmDul.js",
+      "name": "env-DKZPmDul.js",
       "category": "other",
-      "raw": 14432,
-      "gzip": 4887,
-      "brotli": 4302
+      "raw": 25012,
+      "gzip": 7495,
+      "brotli": 6632
     },
     {
-      "file": "assets/WalletDisplay-Dny_tgID.js",
-      "name": "WalletDisplay-Dny_tgID.js",
+      "file": "dist\\assets\\Marketplace-rkkYsshS.js",
+      "name": "Marketplace-rkkYsshS.js",
       "category": "other",
-      "raw": 13939,
-      "gzip": 4697,
-      "brotli": 4163
+      "raw": 14398,
+      "gzip": 4875,
+      "brotli": 4288
     },
     {
-      "file": "assets/LeaderboardPage-Cl52QC92.js",
-      "name": "LeaderboardPage-Cl52QC92.js",
+      "file": "dist\\assets\\WalletDisplay-Bjyu44jN.js",
+      "name": "WalletDisplay-Bjyu44jN.js",
       "category": "other",
-      "raw": 7561,
-      "gzip": 2667,
-      "brotli": 2385
+      "raw": 13970,
+      "gzip": 4707,
+      "brotli": 4169
     },
     {
-      "file": "assets/ShareButton-VoBcmQXL.js",
-      "name": "ShareButton-VoBcmQXL.js",
+      "file": "dist\\assets\\settingsStore-DmBnqMYk.js",
+      "name": "settingsStore-DmBnqMYk.js",
       "category": "other",
-      "raw": 6526,
-      "gzip": 2457,
-      "brotli": 2055
+      "raw": 9918,
+      "gzip": 3352,
+      "brotli": 2995
     },
     {
-      "file": "assets/index-CIGqTk4k.js",
-      "name": "index-CIGqTk4k.js",
+      "file": "dist\\assets\\index-B2GkiI5y.js",
+      "name": "index-B2GkiI5y.js",
       "category": "main",
-      "raw": 6078,
-      "gzip": 2376,
-      "brotli": 2065
+      "raw": 7752,
+      "gzip": 2987,
+      "brotli": 2628
     },
     {
-      "file": "assets/Inventory-CrFSxGPl.js",
-      "name": "Inventory-CrFSxGPl.js",
+      "file": "dist\\assets\\LeaderboardPage-C27EE_04.js",
+      "name": "LeaderboardPage-C27EE_04.js",
       "category": "other",
-      "raw": 5662,
-      "gzip": 2275,
-      "brotli": 1982
+      "raw": 8235,
+      "gzip": 2750,
+      "brotli": 2465
     },
     {
-      "file": "sw.js",
+      "file": "dist\\assets\\ShareButton-gq2HV2Gi.js",
+      "name": "ShareButton-gq2HV2Gi.js",
+      "category": "other",
+      "raw": 6578,
+      "gzip": 2487,
+      "brotli": 2078
+    },
+    {
+      "file": "dist\\assets\\NebulaView-CHSJrp4U.js",
+      "name": "NebulaView-CHSJrp4U.js",
+      "category": "other",
+      "raw": 5479,
+      "gzip": 2318,
+      "brotli": 2044
+    },
+    {
+      "file": "dist\\assets\\Inventory-wQGEom1k.js",
+      "name": "Inventory-wQGEom1k.js",
+      "category": "other",
+      "raw": 4940,
+      "gzip": 1989,
+      "brotli": 1750
+    },
+    {
+      "file": "dist\\sw.js",
       "name": "sw.js",
       "category": "other",
-      "raw": 3435,
-      "gzip": 1437,
-      "brotli": 1257
+      "raw": 3757,
+      "gzip": 1525,
+      "brotli": 1341
     },
     {
-      "file": "assets/Home-V29OYddK.js",
-      "name": "Home-V29OYddK.js",
+      "file": "dist\\assets\\Home-XebO_uD9.js",
+      "name": "Home-XebO_uD9.js",
       "category": "other",
-      "raw": 2875,
-      "gzip": 1212,
-      "brotli": 1033
+      "raw": 2946,
+      "gzip": 1245,
+      "brotli": 1061
     },
     {
-      "file": "assets/EmptyStates-Balh6V7c.js",
-      "name": "EmptyStates-Balh6V7c.js",
+      "file": "dist\\assets\\EmptyStates-DrxNz4KB.js",
+      "name": "EmptyStates-DrxNz4KB.js",
       "category": "other",
       "raw": 2457,
-      "gzip": 1043,
-      "brotli": 872
+      "gzip": 1045,
+      "brotli": 873
     },
     {
-      "file": "assets/virtual_pwa-register-CZyZQnNX.js",
-      "name": "virtual_pwa-register-CZyZQnNX.js",
+      "file": "dist\\assets\\virtual_pwa-register-D7ZF7Hm4.js",
+      "name": "virtual_pwa-register-D7ZF7Hm4.js",
       "category": "other",
-      "raw": 1321,
-      "gzip": 708,
-      "brotli": 618
+      "raw": 1317,
+      "gzip": 711,
+      "brotli": 626
     },
     {
-      "file": "assets/NotFound-C6Ye_vwt.js",
-      "name": "NotFound-C6Ye_vwt.js",
+      "file": "dist\\assets\\haptics-DsmbVfnX.js",
+      "name": "haptics-DsmbVfnX.js",
       "category": "other",
-      "raw": 576,
-      "gzip": 361,
-      "brotli": 297
+      "raw": 818,
+      "gzip": 418,
+      "brotli": 362
+    },
+    {
+      "file": "dist\\assets\\NotFound-CldVIY1L.js",
+      "name": "NotFound-CldVIY1L.js",
+      "category": "other",
+      "raw": 574,
+      "gzip": 360,
+      "brotli": 294
     }
   ],
   "visualization": {

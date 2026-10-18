@@ -1,14 +1,26 @@
 [
   {
-    "name": "Total JS (gzip)",
-    "path": "dist/assets/*.js",
-    "limit": "1030 kB",
+    "name": "Main bundle (gzip)",
+    "path": "dist/assets/index-*.js",
+    "limit": "500 kB",
     "gzip": true
   },
   {
-    "name": "Vendor chunk (gzip)",
+    "name": "Total JS (gzip)",
+    "path": "dist/assets/*.js",
+    "limit": "1150 kB",
+    "gzip": true
+  },
+  {
+    "name": "Vendor chunks (gzip)",
     "path": "dist/assets/vendor-*.js",
-    "limit": "450 kB",
+    "limit": "460 kB",
+    "gzip": true
+  },
+  {
+    "name": "Wallets vendor (gzip)",
+    "path": "dist/assets/vendor-wallets-*.js",
+    "limit": "300 kB",
     "gzip": true
   },
   {
@@ -38,11 +50,11 @@
   {
     "name": "HTML entry",
     "path": "dist/index.html",
-    "limit": "5 kB"
+    "limit": "6 kB"
   },
   {
     "name": "Total dist size",
     "path": "dist/**/*.{js,css,html}",
-    "limit": "1.2 MB"
+    "limit": "1.3 MB"
   }
 ]

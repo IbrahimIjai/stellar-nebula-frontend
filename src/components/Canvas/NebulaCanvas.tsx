@@ -1,7 +1,6 @@
 import { Suspense, memo, useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Preload } from '@react-three/drei'
-import { disposeThreeObject } from '@/utils/threejs/cleanup'
 import { NebulaScene } from './NebulaScene'
 import { CameraControls } from './CameraControls'
 import { FpsCounter } from './FpsCounter'
@@ -22,13 +21,15 @@ import { createRNG } from '@/utils/procedural/nebula'
 import { SCAN_COOLDOWN_MS, SCAN_CHANNEL_DURATION_SEC } from '@/constants/game'
 import type { ResourceType, RarityTier } from '@/types/game'
 
+import { cleanScene } from '@/utils/three-cleanup'
+import { getQualityPreset } from '@/utils/three-performance'
+import { useSettingsStore } from '@/store/settingsStore'
+
 function CanvasResourceCleanup() {
   const { gl, scene } = useThree()
   useEffect(() => {
     return () => {
-      disposeThreeObject(scene)
-      gl.dispose()
-      gl.forceContextLoss()
+      cleanScene(scene, gl)
     }
   }, [gl, scene])
   return null
@@ -99,26 +100,6 @@ function NebulaCanvas({
   const isMotionReduced = reducedMotionProp ?? (prefersReducedMotion || isPaused)
   const effectivePerformanceMode = performanceMode || isMotionReduced
 
-  const [focusedPointId, setFocusedPointId] = useState<string | null>(null)
-  const [isWrapperFocused, setIsWrapperFocused] = useState(false)
-  const [liveMessage, setLiveMessage] = useState('')
-  const [scanningPoints, setScanningPoints] = useState<Set<string>>(new Set())
-  const [rarityMap, setRarityMap] = useState<Record<string, RarityTier>>({})
-  const { getRemainingSeconds, startCooldown, canScan } = useScanCooldown()
-  const scanRngRef = useRef(createInitialRng())
-  const wrapperRef = useRef<HTMLDivElement>(null)
-
-  // Memoize remainingSecondsMap to avoid creating a new object on every render.
-  // The object is rebuilt only when scanCooldowns change (tracked via the hook).
-  const remainingSecondsMap: Record<string, number> = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const point of SCAN_POINTS_META) {
-      map[point.id] = getRemainingSeconds(point.id)
-    }
-    return map
-    // getRemainingSeconds is stable when scanCooldowns haven't changed
-  }, [getRemainingSeconds])
-
   const deviceHints = useMemo(() => {
     if (typeof window === 'undefined') {
       return {
@@ -139,6 +120,36 @@ function NebulaCanvas({
         nav.userAgentData?.mobile === true,
     }
   }, [])
+
+  const graphicsQuality = useSettingsStore((state) => state.graphicsQuality)
+  const fpsMonitoringEnabled = useSettingsStore((state) => state.fpsMonitoringEnabled)
+  const lowPowerMode = useSettingsStore((state) => state.lowPowerMode)
+
+  const qualityPreset = useMemo(() => {
+    return getQualityPreset(graphicsQuality, deviceHints.isMobile)
+  }, [graphicsQuality, deviceHints.isMobile])
+
+  const shouldShowFps = showFps || fpsMonitoringEnabled
+
+  const [focusedPointId, setFocusedPointId] = useState<string | null>(null)
+  const [isWrapperFocused, setIsWrapperFocused] = useState(false)
+  const [liveMessage, setLiveMessage] = useState('')
+  const [scanningPoints, setScanningPoints] = useState<Set<string>>(new Set())
+  const [rarityMap, setRarityMap] = useState<Record<string, RarityTier>>({})
+  const { getRemainingSeconds, startCooldown, canScan } = useScanCooldown()
+  const scanRngRef = useRef(createInitialRng())
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  // Memoize remainingSecondsMap to avoid creating a new object on every render.
+  // The object is rebuilt only when scanCooldowns change (tracked via the hook).
+  const remainingSecondsMap: Record<string, number> = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const point of SCAN_POINTS_META) {
+      map[point.id] = getRemainingSeconds(point.id)
+    }
+    return map
+    // getRemainingSeconds is stable when scanCooldowns haven't changed
+  }, [getRemainingSeconds])
 
   const handleScan = useCallback(
     (pointId: string, resourceType: ResourceType, amount: number) => {
@@ -311,7 +322,7 @@ function NebulaCanvas({
         scan has a cooldown period.
       </p>
 
-      {showFps && <FpsCounter />}
+      {shouldShowFps && <FpsCounter />}
       {showMotionControls && (
         <div
           className="nebula-motion-controls"
@@ -329,8 +340,12 @@ function NebulaCanvas({
       <Canvas
         frameloop={!isPageVisible || isMotionReduced ? 'never' : 'always'}
         camera={{ position: [0, 0, 5], fov: 60, near: 0.1, far: 1000 }}
-        gl={{ antialias: !deviceHints.isMobile, powerPreference: 'high-performance' }}
-        dpr={[1, deviceHints.isMobile ? 1.5 : 2]}
+        gl={{
+          antialias: qualityPreset.antialias && !lowPowerMode,
+          powerPreference: qualityPreset.powerPreference,
+          precision: qualityPreset.precision,
+        }}
+        dpr={[1, lowPowerMode ? 1.0 : qualityPreset.maxPixelRatio]}
         style={{ width: '100%', height: '100%' }}
         aria-hidden="true"
       >
@@ -346,12 +361,14 @@ function NebulaCanvas({
             focusedPointId={focusedPointId}
           />
           <BloomEffect
-            enabled={bloomEnabled && !isMotionReduced}
+            enabled={
+              bloomEnabled && qualityPreset.bloomEnabled && !isMotionReduced && !lowPowerMode
+            }
             intensity={bloomIntensity}
             performanceMode={effectivePerformanceMode}
           />
           <DepthOfFieldEffect
-            enabled={!effectivePerformanceMode}
+            enabled={qualityPreset.dofEnabled && !effectivePerformanceMode && !lowPowerMode}
             performanceMode={effectivePerformanceMode}
           />
           <CameraControls
@@ -360,7 +377,7 @@ function NebulaCanvas({
             reducedMotion={isMotionReduced}
           />
           <CanvasResourceCleanup />
-          {showFps && <RenderStatsCollector />}
+          {shouldShowFps && <RenderStatsCollector />}
           <Preload all />
         </Suspense>
       </Canvas>

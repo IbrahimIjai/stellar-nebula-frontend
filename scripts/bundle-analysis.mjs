@@ -196,11 +196,8 @@ async function analyze() {
   if (UPDATE_BASELINE || !baseline) {
     await fs.writeFile(BASELINE_FILE, JSON.stringify(summary, null, 2))
     console.log(`📌 Baseline ${UPDATE_BASELINE ? 'updated' : 'created'} at ${BASELINE_FILE}`)
-    // Don't fail when updating
-    if (!baseline) {
-      console.log('ℹ️  Initial baseline — no comparison failure')
-      return
-    }
+    console.log('ℹ️  Baseline successfully updated — exiting cleanly')
+    return
   }
 
   if (failures.length) {
