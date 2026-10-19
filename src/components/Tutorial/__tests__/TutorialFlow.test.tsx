@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '../../../test/utils'
+import { render, screen, fireEvent } from '@/test/utils'
 import TutorialFlow from '../TutorialFlow'
-import { useTutorialStore } from '../../../store/tutorialStore'
+import { useTutorialStore } from '@/store/tutorialStore'
 
 function renderTutorial(onClose?: () => void) {
   return render(<TutorialFlow onClose={onClose} />)

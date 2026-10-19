@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '../../../test/utils'
+import { render, screen } from '@/test/utils'
 import { FpsCounter } from '../FpsCounter'
 
 vi.mock('@/hooks/useFrameRateMonitor', () => ({

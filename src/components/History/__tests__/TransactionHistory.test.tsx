@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '../../../test/utils'
+import { render, screen, waitFor } from '@/test/utils'
 import { TransactionHistory } from '../TransactionHistory'
 import { ROW_HEIGHT } from '../transactionWindow'
 import type { StellarTransaction } from '@/types'

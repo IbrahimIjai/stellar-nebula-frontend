@@ -3,8 +3,8 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { WalletProvider } from '@/contexts/WalletContext'
 import { useShipUpgrade } from '../useShipUpgrade'
-import type { ShipNFTRecord } from '../../../services/nft/shipNFT'
-import type { ResourceAssetSnapshot } from '../../../services/assets/resources'
+import type { ShipNFTRecord } from '@/services/nft/shipNFT'
+import type { ResourceAssetSnapshot } from '@/services/assets/resources'
 
 // ─── Hoisted mock functions (must be before vi.mock factories) ───────────────
 
@@ -81,15 +81,15 @@ vi.mock('@/services/logging', () => ({
   }),
 }))
 
-vi.mock('../../../services/nft/shipNFT', () => ({
+vi.mock('@/services/nft/shipNFT', () => ({
   fetchShipNFT: mockFetchShipNFT,
 }))
 
-vi.mock('../../../services/assets/resources', () => ({
+vi.mock('@/services/assets/resources', () => ({
   fetchResourceAssetSnapshot: mockFetchResourceAssetSnapshot,
 }))
 
-vi.mock('../../../services/contracts/shipUpgrade', () => ({
+vi.mock('@/services/contracts/shipUpgrade', () => ({
   buildShipUpgradeTransaction: mockBuildShipUpgradeTransaction,
   calculateUpgradeRequirements: mockCalculateUpgradeRequirements,
   calculateUpgradedStats: mockCalculateUpgradedStats,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '../../../test/utils'
-import { WalletProvider } from '../../../contexts/WalletContext'
+import { render, screen } from '@/test/utils'
+import { WalletProvider } from '@/contexts/WalletContext'
 import Footer from '../Footer'
 
 vi.mock('@services/wallets', async () => ({

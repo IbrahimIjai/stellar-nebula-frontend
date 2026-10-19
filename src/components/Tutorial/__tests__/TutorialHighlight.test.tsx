@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { render } from '../../../test/utils'
+import { render } from '@/test/utils'
 import { TutorialHighlight } from '../TutorialHighlight'
 
 describe('TutorialHighlight', () => {

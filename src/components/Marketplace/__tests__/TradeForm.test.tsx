@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '../../../test/utils'
+import { render, screen } from '@/test/utils'
 import { TradeForm } from '../TradeForm'
 import { SUPPORTED_ASSETS } from '../types'
 
