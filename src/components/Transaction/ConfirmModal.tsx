@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { TransactionPending } from './TransactionPending'
 
 export interface ConfirmationDetail {
   label: string
@@ -91,6 +92,8 @@ export function ConfirmModal({
         </div>
 
         {children}
+
+        {isSubmitting && <TransactionPending />}
 
         {error && (
           <div role="alert" style={errorBoxStyle}>

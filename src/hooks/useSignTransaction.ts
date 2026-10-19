@@ -10,6 +10,7 @@ import type { TransactionCostPreview } from '@utils/stellar/feeEstimation'
 import type { ParsedSimulationResult, ContractNativeValue } from '@utils/stellar/responseParser'
 import type { XDR } from '@/types'
 import type { StellarNetwork } from '@/types'
+import { withTimeout, SIGNING_TIMEOUT_MS, SIGNING_TIMEOUT_MESSAGE } from '@/utils/stellar/timeout'
 import {
   STELLAR_FUTURENET_PASSPHRASE,
   STELLAR_MAINNET_PASSPHRASE,
@@ -156,7 +157,11 @@ export function useSignTransaction(): UseSignTransactionReturn {
           )
         }
 
-        const signedXdr = await signTransaction(unsignedXdr)
+        const signedXdr = await withTimeout(
+          signTransaction(unsignedXdr),
+          SIGNING_TIMEOUT_MS,
+          SIGNING_TIMEOUT_MESSAGE
+        )
         if (!signedXdr) {
           throw new Error('Transaction signing was cancelled or rejected by the wallet.')
         }

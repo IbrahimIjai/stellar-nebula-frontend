@@ -43,6 +43,13 @@ a {
   }
 }
 
+/* Shared spinner rotation for inline-style spinners (TransactionPending, WalletDisplay). */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes balanceGlow {
   0% {
     box-shadow: 0 0 0 rgba(50, 214, 165, 0);

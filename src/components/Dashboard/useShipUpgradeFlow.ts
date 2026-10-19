@@ -227,7 +227,9 @@ export function useShipUpgradeFlow(activeShip: Ship | null) {
     }
 
     setPendingContractUpgrade(null)
-    setUpgradeMessage(`${upgrade.name} is submitting its transaction on-chain…`)
+    setUpgradeMessage(
+      `${upgrade.name} is awaiting your wallet signature (times out after 60 seconds).`
+    )
 
     const txHash = await upgradeContract.executeUpgrade()
 
