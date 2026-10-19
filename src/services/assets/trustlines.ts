@@ -2,6 +2,7 @@ import { Asset, BASE_FEE, Operation, TransactionBuilder } from '@stellar/stellar
 import { createHorizonServer, getActiveStellarConfig } from '@/config/stellar'
 import type { StellarNetworkConfig } from '@/config/stellar'
 import { STELLAR_TX_TIMEOUT_SECONDS } from '@/constants/stellar'
+import { retryAsync, isRetryableStellarError } from '@/utils/stellar/retry'
 
 export interface TrustlineAsset {
   code: string
@@ -123,7 +124,20 @@ export async function buildTrustlineTransaction(
 ): Promise<TrustlineBuildResult> {
   const activeConfig = config ?? getActiveStellarConfig()
   const horizon = await createHorizonServer(activeConfig)
-  const account = await horizon.loadAccount(sourcePublicKey)
+  let account
+  try {
+    account = await horizon.loadAccount(sourcePublicKey)
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 404) {
+      const friendbotHint =
+        activeConfig.network === 'testnet'
+          ? ` Fund it on testnet: https://friendbot.stellar.org/?addr=${sourcePublicKey}`
+          : ''
+      throw new Error(`Account is not funded on the network yet.${friendbotHint}`)
+    }
+    throw err
+  }
   const transaction = new TransactionBuilder(account, {
     fee: BASE_FEE,
     networkPassphrase: activeConfig.networkPassphrase,
@@ -151,7 +165,12 @@ export async function submitTrustlineTransaction(
   const activeConfig = config ?? getActiveStellarConfig()
   const horizon = await createHorizonServer(activeConfig)
   const transaction = TransactionBuilder.fromXDR(signedXdr, activeConfig.networkPassphrase)
-  return horizon.submitTransaction(transaction)
+  // Transient network/congestion failures are retried with backoff; see
+  // docs/TRANSACTIONS.md for the retry policy shared across submission paths.
+  return retryAsync(() => horizon.submitTransaction(transaction), {
+    retries: 2,
+    shouldRetry: (error) => isRetryableStellarError(error),
+  })
 }
 
 /**
