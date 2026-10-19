@@ -1,12 +1,34 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import type { Order } from './types'
+import {
+  arrayOf,
+  findInvalidProps,
+  isFiniteNumber,
+  isRecord,
+  reportInvalidProps,
+} from '../../utils/validation'
 
 interface OrderBookProps {
   bids: Order[] // Buy orders
   asks: Order[] // Sell orders
 }
 
+const isOrderLike = (value: unknown): boolean =>
+  isRecord(value) &&
+  isFiniteNumber(value.price) &&
+  isFiniteNumber(value.amount) &&
+  isFiniteNumber(value.total)
+
+const orderBookSchema = {
+  bids: arrayOf(isOrderLike),
+  asks: arrayOf(isOrderLike),
+}
+
 export const OrderBook: React.FC<OrderBookProps> = ({ bids, asks }) => {
+  useEffect(() => {
+    reportInvalidProps('OrderBook', findInvalidProps({ bids, asks }, orderBookSchema))
+  }, [bids, asks])
+
   // Sort bids descending, asks ascending
   const sortedBids = [...bids].sort((a, b) => b.price - a.price).slice(0, 10)
   const sortedAsks = [...asks].sort((a, b) => a.price - b.price).slice(0, 10)
