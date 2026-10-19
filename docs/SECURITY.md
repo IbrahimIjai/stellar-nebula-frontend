@@ -228,9 +228,53 @@ When a CDN resource changes upstream, run `npm run sri:update` and commit the re
   - contract IDs
   - public API base URLs
 
+## HTTPS Enforcement
+
+HTTPS is enforced at the production deployment layer:
+
+- **Vercel redirects** all HTTP requests to HTTPS automatically.
+- **HSTS header** (`Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`) is set in `vercel.json` to enforce browser-level HTTPS enforcement for one year.
+- **Dev environment** should use HTTPS during local development by configuring the Vite dev server.
+- **Mixed content warnings** are prevented by ensuring all external resources use HTTPS URLs.
+
+## Sensitive Data Protection
+
+User and session data stored in localStorage includes sensitive information (wallet addresses, authentication tokens). This data is protected through encryption:
+
+- **Encryption utilities** in `src/utils/crypto.ts` provide AES-256-GCM encryption with PBKDF2 key derivation.
+- **Storage service** in `src/services/storage.ts` handles encrypted/decrypted access to sensitive localStorage entries.
+- **Encryption key** is derived from a session-specific password and stored in sessionStorage.
+- **Backward compatibility** is maintained by gracefully handling unencrypted legacy data.
+- **Helper functions** `encryptSensitiveSlices()` and `decryptSensitiveSlices()` in `src/services/saveLoad.ts` allow manual encryption of game save data.
+
+## Content Security Policy
+
+A strict Content Security Policy is enforced via both Vercel headers and HTML meta tag:
+
+```
+default-src 'self'
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.logrocket.io https://*.stellar.org
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com
+font-src 'self' https://fonts.gstatic.com data:
+img-src 'self' data: blob: https:
+connect-src 'self' https://*.stellar.org wss://*.stellar.org https://*.sentry.io https://*.logrocket.io http://localhost:* ws://localhost:* wss://*
+worker-src 'self' blob:
+object-src 'none'
+frame-ancestors 'none'
+base-uri 'self'
+form-action 'self'
+```
+
+This policy:
+
+- Prevents XSS attacks by restricting script execution sources.
+- Blocks unauthorized framing (`frame-ancestors 'none'`).
+- Restricts form submissions to same-origin (`form-action 'self'`).
+- Allows external connections only to Stellar network endpoints and monitoring services.
+- Denies object embedding entirely.
+
 ## Recommendations
 
-- Add a Content Security Policy (CSP) at the hosting layer.
 - Migrate to Tailwind CSS 4 to retire the `braces` allowlist entry.
 - Upgrade `react-router-dom` to v7 for the moderate open-redirect advisories.
 - Add runtime secure RPC validation to reject non-HTTPS endpoints.
@@ -244,5 +288,9 @@ When a CDN resource changes upstream, run `npm run sri:update` and commit the re
 - `SECURITY.md` has been created with a project-specific review.
 - Code-level wallet and transaction safety improvements were implemented.
 - `.gitignore` now excludes environment files.
+- HTTPS enforcement implemented via Vercel headers and HSTS configuration (2026-10-19).
+- Content Security Policy enforced at hosting layer and in HTML meta tag (2026-10-19).
+- Sensitive data encryption utilities and storage service created (2026-10-19).
+- Multi-signature transaction support added with full documentation (2026-10-19).
 - `npm audit` was run on 2026-10-18; high/critical findings were resolved or reviewed as described in
   [Dependency Security Review](#dependency-security-review), and the CI gate now enforces the policy.

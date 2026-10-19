@@ -37,6 +37,7 @@ import {
   type AchievementState,
 } from '@/store'
 import { logger } from './logging'
+import { encryptAndStore, retrieveAndDecrypt } from './storage'
 
 /** Bumped whenever the shape of the aggregate save bundle changes. */
 export const SAVE_FORMAT_VERSION = 1
@@ -176,7 +177,8 @@ export interface SaveBundle {
 /**
  * Build an exportable snapshot of the requested slices (all by default).
  * Reads live store state, not raw localStorage, so it always reflects the
- * current in-memory session.
+ * current in-memory session. Note: sensitive slices (user, session) containing
+ * wallet addresses and auth data should be encrypted before export.
  */
 export function exportSave(sliceNames?: SliceName[]): SaveBundle {
   const wanted = sliceNames ? REGISTRY.filter((s) => sliceNames.includes(s.name)) : REGISTRY
@@ -324,5 +326,49 @@ export function clearAllGameData(sliceNames?: SliceName[]) {
   for (const slice of wanted) {
     slice.setState(slice.getDefaults())
     window.localStorage.removeItem(slice.storageKey)
+  }
+}
+
+/**
+ * Encrypt sensitive user and session data before export.
+ * Provides a secure way to share game saves without exposing wallet addresses.
+ */
+export async function encryptSensitiveSlices(password: string): Promise<void> {
+  const sensitiveSluces = ['user', 'session']
+
+  for (const sliceName of sensitiveSluces) {
+    const slice = REGISTRY.find((s) => s.name === sliceName)
+    if (!slice) continue
+
+    const raw = window.localStorage.getItem(slice.storageKey)
+    if (!raw) continue
+
+    try {
+      await encryptAndStore(slice.storageKey, raw)
+    } catch (error) {
+      logger.error(`Failed to encrypt slice ${sliceName}`, error as Error)
+    }
+  }
+}
+
+/**
+ * Decrypt sensitive user and session data after import.
+ * Restores encrypted wallet addresses and session information securely.
+ */
+export async function decryptSensitiveSlices(password: string): Promise<void> {
+  const sensitiveSluces = ['user', 'session']
+
+  for (const sliceName of sensitiveSluces) {
+    const slice = REGISTRY.find((s) => s.name === sliceName)
+    if (!slice) continue
+
+    try {
+      const decrypted = await retrieveAndDecrypt(slice.storageKey)
+      if (decrypted) {
+        window.localStorage.setItem(slice.storageKey, decrypted)
+      }
+    } catch (error) {
+      logger.error(`Failed to decrypt slice ${sliceName}`, error as Error)
+    }
   }
 }
