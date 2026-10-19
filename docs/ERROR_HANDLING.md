@@ -21,3 +21,17 @@ Tests live in `src/__tests__/ErrorBoundary.test.tsx` and `src/components/ErrorBo
 - `silenceConsoleError()` hides React's expected error output and returns a restore function.
 
 Mock `services/errorTracking` and `services/analytics` to assert on reporting.
+
+## User-facing error messages
+
+Technical error text (stack traces, RPC messages, contract codes) is not shown to people by default.
+
+- `src/utils/error-messages.ts` maps any thrown value to a `FriendlyError` with a `title`, a `message` and an `action`. It matches common wallet, balance, network and contract failures and falls back to a generic message.
+- `src/components/ErrorDisplay.tsx` renders that message in a `role="alert"` panel with an optional **Try again** button. It sends the raw error to `captureError` for debugging.
+- The raw error text appears only in a collapsed "Technical details" section in development builds.
+
+```tsx
+<ErrorDisplay error={error} onRetry={refetch} />
+```
+
+Add a new pattern by appending to `PATTERNS` in `error-messages.ts` and adding a test in `src/utils/__tests__/error-messages.test.ts`.

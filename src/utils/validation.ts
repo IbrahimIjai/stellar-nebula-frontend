@@ -1,3 +1,5 @@
+import { captureError } from '../services/errorTracking'
+
 /**
  * Small, dependency-free client-side validation helpers.
  *
@@ -107,4 +109,55 @@ export function validateValues<Values extends Record<string, string>>(
     if (error) errors[key] = error
   }
   return errors
+}
+
+// ─── Runtime prop validation ──────────────────────────────────────────────
+// Guards for values that arrive from outside the type system (API responses,
+// persisted state). Types alone cannot catch these at runtime.
+
+/** Returns true when a value has the expected shape. */
+export type PropGuard = (value: unknown) => boolean
+
+export const isString = (value: unknown): value is string => typeof value === 'string'
+
+export const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
+
+export const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/** Allow `undefined` in addition to the guarded type. */
+export const optionalProp =
+  (guard: PropGuard): PropGuard =>
+  (value) =>
+    value === undefined || guard(value)
+
+/** Every item in an array must pass `guard`. */
+export const arrayOf =
+  (guard: PropGuard): PropGuard =>
+  (value) =>
+    Array.isArray(value) && value.every((item) => guard(item))
+
+/** Names of the props in `schema` whose values fail their guard. */
+export function findInvalidProps(
+  props: Record<string, unknown>,
+  schema: Record<string, PropGuard>
+): string[] {
+  return Object.keys(schema).filter((key) => !schema[key](props[key]))
+}
+
+/**
+ * Report invalid props. In development they are logged as warnings so the
+ * problem is visible while coding. In production they go to error tracking.
+ */
+export function reportInvalidProps(component: string, invalid: string[]): void {
+  if (invalid.length === 0) return
+  const message = `${component}: invalid prop(s): ${invalid.join(', ')}`
+  if (import.meta.env.DEV) {
+    console.warn(message)
+  } else {
+    captureError(new Error(message), { component, invalid })
+  }
 }

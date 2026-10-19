@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react'
+import React from 'react'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
@@ -18,6 +18,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   rightIcon?: React.ReactNode
   /** Stretch button to full container width. */
   fullWidth?: boolean
+  /** Forwarded to the underlying <button>. React 19 passes `ref` as a normal prop. */
+  ref?: React.Ref<HTMLButtonElement>
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
@@ -45,64 +47,62 @@ const MIN_DIMENSIONS: Record<ButtonSize, { minHeight: string; minWidth: string }
 /**
  * Accessible Button component enforcing WCAG 2.1 SC 2.5.5 (AAA) minimum 44x44px touch target sizes
  * across all sizes and variants.
+ *
+ * Uses the React 19 ref-as-prop pattern instead of `forwardRef`.
  */
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      variant = 'primary',
-      size = 'md',
-      isLoading = false,
-      loadingText,
-      leftIcon,
-      rightIcon,
-      fullWidth = false,
-      disabled,
-      type = 'button',
-      className = '',
-      style,
-      children,
-      ...rest
-    },
-    ref
-  ) => {
-    const isDisabled = Boolean(disabled || isLoading)
-    const dimensions = MIN_DIMENSIONS[size]
+export const Button = ({
+  variant = 'primary',
+  size = 'md',
+  isLoading = false,
+  loadingText,
+  leftIcon,
+  rightIcon,
+  fullWidth = false,
+  disabled,
+  type = 'button',
+  className = '',
+  style,
+  children,
+  ref,
+  ...rest
+}: ButtonProps) => {
+  const isDisabled = Boolean(disabled || isLoading)
+  const dimensions = MIN_DIMENSIONS[size]
 
-    return (
-      <button
-        ref={ref}
-        type={type}
-        disabled={isDisabled}
-        aria-disabled={isDisabled ? true : undefined}
-        aria-busy={isLoading ? true : undefined}
-        data-variant={variant}
-        data-size={size}
-        className={`touch-target inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors select-none ${
-          VARIANT_CLASSES[variant]
-        } ${SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${
-          isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-        } ${className}`.trim()}
-        style={{
-          minHeight: dimensions.minHeight,
-          minWidth: dimensions.minWidth,
-          touchAction: 'manipulation',
-          ...style,
-        }}
-        {...rest}
-      >
-        {isLoading && (
-          <span
-            aria-hidden="true"
-            className="inline-block h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"
-          />
-        )}
-        {!isLoading && leftIcon && <span aria-hidden="true">{leftIcon}</span>}
-        <span>{isLoading && loadingText ? loadingText : children}</span>
-        {!isLoading && rightIcon && <span aria-hidden="true">{rightIcon}</span>}
-      </button>
-    )
-  }
-)
+  return (
+    <button
+      ref={ref}
+      type={type}
+      disabled={isDisabled}
+      aria-disabled={isDisabled ? true : undefined}
+      aria-busy={isLoading ? true : undefined}
+      data-variant={variant}
+      data-size={size}
+      className={`touch-target inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors select-none ${
+        VARIANT_CLASSES[variant]
+      } ${SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${
+        isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+      } ${className}`.trim()}
+      style={{
+        minHeight: dimensions.minHeight,
+        minWidth: dimensions.minWidth,
+        touchAction: 'manipulation',
+        ...style,
+      }}
+      {...rest}
+    >
+      {isLoading && (
+        <span
+          aria-hidden="true"
+          className="inline-block h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"
+        />
+      )}
+      {!isLoading && leftIcon && <span aria-hidden="true">{leftIcon}</span>}
+      <span>{isLoading && loadingText ? loadingText : children}</span>
+      {!isLoading && rightIcon && <span aria-hidden="true">{rightIcon}</span>}
+    </button>
+  )
+}
 
 Button.displayName = 'Button'
 
