@@ -1,0 +1,5 @@
+# HTTPS enforcement
+http://stellar-nebula.vercel.app/* https://stellar-nebula.vercel.app/:splat 301
+
+# SPA fallback - all non-matching routes go to index.html
+/* /index.html 200
