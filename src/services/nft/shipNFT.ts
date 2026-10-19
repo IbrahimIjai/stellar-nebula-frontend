@@ -1,5 +1,6 @@
 import type { StellarNetworkConfig } from '@config/stellar'
 import { sanitizeContractString, sanitizeURL } from '@/utils/xss-protection'
+import { HORIZON_FETCH_CREDENTIALS } from '@/config/horizon'
 
 export interface ShipNFTAttribute {
   trait_type: string
@@ -243,7 +244,10 @@ export async function fetchShipNFT(
     /\/+$/,
     ''
   )
-  const response = await fetch(`${horizonUrl}/accounts/${accountId}`)
+  // Issue #488: public Horizon read, so no cookies or ambient credentials are sent
+  const response = await fetch(`${horizonUrl}/accounts/${accountId}`, {
+    credentials: HORIZON_FETCH_CREDENTIALS,
+  })
 
   if (!response.ok) {
     if (response.status === 404) {

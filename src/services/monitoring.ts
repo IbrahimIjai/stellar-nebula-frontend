@@ -12,6 +12,12 @@
 
 import { getSentry } from './sentryClient'
 import { createScopedLogger } from './logging'
+import {
+  isStellarNetworkUrl,
+  redactStellarKeysInText,
+  redactWalletAddress,
+  sanitizeMonitoringData,
+} from '@/utils/sanitization'
 
 const log = createScopedLogger('Monitoring')
 
@@ -94,6 +100,10 @@ async function initializeSentry(config: MonitoringConfig): Promise<void> {
       replaysSessionSampleRate: config.sentryReplaySessionRate ?? 0.1,
       replaysOnErrorSampleRate: config.sentryReplayErrorRate ?? 1.0,
       maxBreadcrumbs: 50,
+      beforeBreadcrumb(breadcrumb) {
+        // Issue #486: redact wallet addresses and amounts before they are stored
+        return sanitizeMonitoringData(breadcrumb) as typeof breadcrumb
+      },
       beforeSend(event, hint) {
         // Filter out low-level errors that might be noise
         if (event.exception) {
@@ -108,6 +118,12 @@ async function initializeSentry(config: MonitoringConfig): Promise<void> {
             return null
           }
         }
+        // Issue #486: final pass over structured payloads and the request URL
+        if (event.extra) event.extra = sanitizeMonitoringData(event.extra) as typeof event.extra
+        if (event.contexts) {
+          event.contexts = sanitizeMonitoringData(event.contexts) as typeof event.contexts
+        }
+        if (event.request?.url) event.request.url = redactStellarKeysInText(event.request.url)
         return event
       },
     })
@@ -144,6 +160,8 @@ function initializeLogRocket(appId: string): void {
         // Capture all console messages
         shouldAggregateConsoleErrors: true,
       },
+      // Issue #486: do not store the viewer's IP address alongside sessions
+      shouldCaptureIP: false,
       network: {
         // Capture all network requests
         requestSanitizer: (request: any) => {
@@ -151,17 +169,32 @@ function initializeLogRocket(appId: string): void {
           if (request.headers) {
             delete request.headers['Authorization']
             delete request.headers['X-API-Key']
+            delete request.headers['Cookie']
+          }
+          // Wallet addresses appear in Horizon paths such as /accounts/G...
+          if (typeof request.url === 'string') {
+            request.url = redactStellarKeysInText(request.url)
+          }
+          if (typeof request.body === 'string') {
+            request.body = redactStellarKeysInText(request.body)
           }
           return request
         },
         responseSanitizer: (response: any) => {
-          // Sanitize sensitive response data if needed
+          // Horizon and RPC responses contain balances and transaction details: drop them
+          if (isStellarNetworkUrl(response.url)) {
+            response.body = '[REDACTED]'
+          } else if (typeof response.body === 'string') {
+            response.body = redactStellarKeysInText(response.body)
+          }
           return response
         },
       },
       dom: {
         // Capture DOM changes
         inputSanitizer: true,
+        // Mask all rendered text so balances and addresses are not replayed
+        textSanitizer: true,
       },
     })
 
@@ -195,10 +228,13 @@ function initializeLogRocket(appId: string): void {
  */
 export function setMonitoringUser(userId: string, email?: string, username?: string): void {
   try {
+    // Issue #486: the user ID is a wallet public key, so only a shortened form is sent
+    const safeUserId = redactWalletAddress(userId)
+
     // Set Sentry user
     getSentry().then((Sentry) =>
       Sentry.setUser({
-        id: userId,
+        id: safeUserId,
         email,
         username,
       })
@@ -207,7 +243,7 @@ export function setMonitoringUser(userId: string, email?: string, username?: str
     // Set LogRocket user if available
     const LogRocket = (window as any).LogRocket
     if (LogRocket) {
-      LogRocket.identify(userId, {
+      LogRocket.identify(safeUserId, {
         email,
         username,
       })
@@ -250,18 +286,20 @@ export function clearMonitoringUser(): void {
  */
 export function captureMonitoringEvent(eventName: string, data?: Record<string, any>): void {
   try {
+    const safeData = data ? (sanitizeMonitoringData(data) as Record<string, any>) : undefined
+
     getSentry().then((Sentry) =>
       Sentry.captureMessage(eventName, {
         level: 'info',
         contexts: {
-          custom: data,
+          custom: safeData,
         },
       })
     )
 
     const LogRocket = (window as any).LogRocket
     if (LogRocket) {
-      LogRocket.captureException(new Error(eventName), { extra: data })
+      LogRocket.captureException(new Error(eventName), { extra: safeData })
     }
   } catch (error) {
     log.debug('Failed to capture monitoring event', { eventName })
@@ -277,19 +315,23 @@ export function addMonitoringBreadcrumb(
   data?: Record<string, any>
 ): void {
   try {
+    // Issue #486: redact wallet addresses, secrets and amounts before they leave the app
+    const safeMessage = redactStellarKeysInText(message)
+    const safeData = data ? (sanitizeMonitoringData(data) as Record<string, any>) : undefined
+
     getSentry().then((Sentry) =>
       Sentry.addBreadcrumb({
-        message,
+        message: safeMessage,
         category,
-        data,
+        data: safeData,
         level: 'info',
       })
     )
 
     const LogRocket = (window as any).LogRocket
     if (LogRocket) {
-      LogRocket.captureMessage(message, {
-        extra: data,
+      LogRocket.captureMessage(safeMessage, {
+        extra: safeData,
       })
     }
   } catch (error) {
