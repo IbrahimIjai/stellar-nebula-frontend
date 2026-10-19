@@ -246,6 +246,7 @@ User and session data stored in localStorage includes sensitive information (wal
 - **Encryption key** is derived from a session-specific password and stored in sessionStorage.
 - **Backward compatibility** is maintained by gracefully handling unencrypted legacy data.
 - **Helper functions** `encryptSensitiveSlices()` and `decryptSensitiveSlices()` in `src/services/saveLoad.ts` allow manual encryption of game save data.
+- **Monitoring redaction** keeps wallet addresses, secrets and amounts out of Sentry and LogRocket (`src/utils/sanitization.ts`, see [PRIVACY.md](./PRIVACY.md)).
 
 ## Content Security Policy
 
@@ -273,6 +274,47 @@ This policy:
 - Allows external connections only to Stellar network endpoints and monitoring services.
 - Denies object embedding entirely.
 
+## Clickjacking Protection (#487)
+
+The app must not be embeddable in another site's frame, which would allow clickjacking attacks.
+
+- **`X-Frame-Options: DENY`** is set in `vercel.json`, `nginx.conf`, and the dev and preview servers in `vite.config.ts`.
+- **`Content-Security-Policy: frame-ancestors 'none'`** is set as a response header in the same places. The `frame-ancestors` directive is the modern control. `X-Frame-Options` covers older browsers.
+- `frame-ancestors` is **ignored in a `<meta>` tag**, so `index.html` does not carry it. The header is the enforcement point.
+- `.github/workflows/security-headers.yml` checks these headers in CI and, when a URL is set, against the deployed site.
+
+## Security Headers (#489)
+
+Every response, including SPA routes, sends the following headers:
+
+| Header | Value | Purpose |
+| :--- | :--- | :--- |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` | HTTPS only (`vercel.json`) |
+| `X-Content-Type-Options` | `nosniff` | Stops MIME-type sniffing |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits the referrer sent to other sites |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()` | Disables device APIs the app does not use |
+| `X-XSS-Protection` | `0` | Turns off the legacy browser XSS auditor, which can introduce vulnerabilities. CSP is the XSS control. |
+| `X-Frame-Options` | `DENY` | See Clickjacking Protection |
+| `Content-Security-Policy` | See Content Security Policy below | XSS and framing protection |
+
+Notes:
+
+- `nginx.conf` must repeat `add_header` in every location that sets its own `add_header`. Otherwise
+  nginx drops the server-level headers. The `/` and `/assets/` locations do this.
+- The `X-XSS-Protection` value is `0` on purpose. Setting `1; mode=block` is no longer recommended.
+
+## CORS and Horizon Access (#488)
+
+- The app contacts only the Stellar Horizon hosts listed in `src/config/horizon.ts`:
+  `horizon-testnet.stellar.org`, `horizon-futurenet.stellar.org` and `horizon.stellar.org`. A local
+  `localhost` Quickstart node is allowed in development only.
+- `createHorizonServer()` refuses any other host before a request is made.
+- Horizon serves public ledger data, so Horizon requests carry **no credentials**. The raw `fetch`
+  in `src/services/nft/shipNFT.ts` uses `credentials: 'omit'`, and the SDK clients send no
+  authentication headers.
+- CORS headers are set by the Horizon server. This app does not require `Access-Control-Allow-Credentials`.
+- Full details are in [API_INTEGRATION.md](./API_INTEGRATION.md).
+
 ## Recommendations
 
 - Migrate to Tailwind CSS 4 to retire the `braces` allowlist entry.
@@ -292,5 +334,9 @@ This policy:
 - Content Security Policy enforced at hosting layer and in HTML meta tag (2026-10-19).
 - Sensitive data encryption utilities and storage service created (2026-10-19).
 - Multi-signature transaction support added with full documentation (2026-10-19).
+- LogRocket and Sentry redact wallet addresses, secrets and amounts before data leaves the app; see [PRIVACY.md](./PRIVACY.md) and [MONITORING.md](./MONITORING.md#privacy-controls-logrocket--sentry-486) (#486).
+- Clickjacking protection via `X-Frame-Options` and `frame-ancestors` headers (#487).
+- Horizon host allow-list and credential-free requests; see [API_INTEGRATION.md](./API_INTEGRATION.md) (#488).
+- Security headers applied to Vercel, nginx (including SPA routes) and the dev and preview servers, verified by `security-headers.yml` (#489).
 - `npm audit` was run on 2026-10-18; high/critical findings were resolved or reviewed as described in
   [Dependency Security Review](#dependency-security-review), and the CI gate now enforces the policy.

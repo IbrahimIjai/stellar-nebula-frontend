@@ -60,6 +60,20 @@ function generatePreloadHints(): Plugin {
   }
 }
 
+/**
+ * Security headers for the dev and preview servers (#487, #489). Keep in sync with
+ * vercel.json and nginx.conf, which are the headers production actually serves.
+ */
+const SECURITY_HEADERS: Record<string, string> = {
+  'X-Frame-Options': 'DENY',
+  'Content-Security-Policy': "frame-ancestors 'none'",
+  'X-Content-Type-Options': 'nosniff',
+  'X-XSS-Protection': '0',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy':
+    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
+}
+
 export default defineConfig({
   esbuild: {
     // Production bundles drop debug-level console output. console.warn/error are kept so
@@ -263,4 +277,10 @@ export default defineConfig({
   },
   // Image optimization (#258)
   assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.webp', '**/*.avif', '**/*.svg'],
+  server: {
+    headers: SECURITY_HEADERS,
+  },
+  preview: {
+    headers: SECURITY_HEADERS,
+  },
 })

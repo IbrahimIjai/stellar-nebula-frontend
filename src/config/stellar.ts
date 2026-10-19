@@ -9,6 +9,7 @@ import {
   STELLAR_TESTNET_PASSPHRASE,
   STELLAR_TESTNET_RPC_URL,
 } from '@/constants/stellar'
+import { assertTrustedHorizonUrl } from '@/config/horizon'
 
 export type StellarNetwork = 'testnet' | 'futurenet' | 'mainnet'
 
@@ -157,12 +158,16 @@ export async function createStellarRpcServer(
   return new rpc.Server(config.rpcUrl)
 }
 
-/** Create a Horizon server client. */
+/**
+ * Create a Horizon server client.
+ * Issue #488: refuses Horizon hosts outside the trusted list (see config/horizon.ts).
+ */
 export async function createHorizonServer(
   config: StellarNetworkConfig = getActiveStellarConfig()
 ): Promise<Horizon.Server> {
   const { Horizon } = await import('@stellar/stellar-sdk')
-  return new Horizon.Server(config.horizonUrl)
+  const horizonUrl = assertTrustedHorizonUrl(config.horizonUrl, { allowLocal: import.meta.env.DEV })
+  return new Horizon.Server(horizonUrl)
 }
 
 /**

@@ -31,6 +31,33 @@ The application utilizes native browser `PerformanceObserver` APIs to track Core
 ### 3. Application Bootstrap (`src/main.tsx`)
 Web Vitals monitoring is initialized before application render, ensuring immediate capture of navigation timing (TTFB) and early paints (FCP).
 
+## Privacy Controls (LogRocket & Sentry) (#486)
+
+Session replay and error tracking must not capture wallet addresses, secret keys or transaction
+amounts. The redaction helpers live in `src/utils/sanitization.ts`, and `src/services/monitoring.ts`
+applies them at every point where data leaves the app.
+
+| Setting | Location | Effect |
+| :--- | :--- | :--- |
+| `shouldCaptureIP: false` | LogRocket `init` | IP addresses are not stored with sessions |
+| `dom.textSanitizer: true`, `dom.inputSanitizer: true` | LogRocket `init` | Rendered text and form inputs are masked in replays |
+| `requestSanitizer` | LogRocket `init` | Strips `Authorization`, `X-API-Key` and `Cookie` headers. Redacts public keys in URLs and bodies. |
+| `responseSanitizer` | LogRocket `init` | Drops response bodies from Stellar hosts (`*.stellar.org`) |
+| `beforeBreadcrumb` | Sentry `init` | Sanitizes every breadcrumb before it is stored |
+| `beforeSend` | Sentry `init` | Sanitizes `extra`, `contexts` and the request URL |
+| Shortened user ID | `setMonitoringUser()` | Sends `GABCD…WXYZ` to Sentry and LogRocket instead of the full public key |
+
+Redaction rules:
+
+- Stellar public keys (`G` + 55 base32 characters) are shortened to `GABCD…WXYZ`.
+- Stellar secret seeds (`S` + 55 base32 characters) are replaced with `[REDACTED]`.
+- Values under keys such as `token`, `password`, `secret`, `authorization` and `cookie` are replaced with `[REDACTED]`.
+- Numbers and strings under keys such as `amount`, `balance`, `price`, `fee` and `cost` are replaced with `[AMOUNT]`.
+
+When you add a new `captureMonitoringEvent` or `addMonitoringBreadcrumb` call, pass data through
+these helpers rather than sending raw values. See [PRIVACY.md](./PRIVACY.md) for the policy and the open
+GDPR items.
+
 ## Performance Dashboards & Regressions
 
 ### Sentry Performance Dashboard Configuration
