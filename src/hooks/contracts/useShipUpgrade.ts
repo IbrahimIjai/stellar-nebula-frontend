@@ -19,6 +19,7 @@ import {
 import { fetchShipNFT, type ShipNFTRecord } from '../../services/nft/shipNFT'
 import { retryAsync, isRetryableStellarError } from '@utils/stellar/retry'
 import { haptics } from '@/utils/haptics'
+import { translateContractError } from '@/services/contracts/errorTranslation'
 
 interface UseShipUpgradeResult {
   shipNFT: ShipNFTRecord | null
@@ -160,7 +161,8 @@ export function useShipUpgrade(
 
       return result
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to build upgrade transaction')
+      // Surface user-friendly, actionable messages instead of raw SDK errors.
+      setError(translateContractError(err).message)
       haptics.error()
       return null
     }
@@ -229,7 +231,7 @@ export function useShipUpgrade(
       haptics.upgradeSuccess()
       return finalResult.txHash
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit upgrade transaction')
+      setError(translateContractError(err).message)
       haptics.error()
       return null
     }
