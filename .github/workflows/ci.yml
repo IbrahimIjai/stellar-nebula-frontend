@@ -12,6 +12,7 @@ on:
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -29,6 +30,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          # Full history so the format check can diff against the PR base branch.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -38,6 +42,21 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Prettier is enforced on files the PR touches. Whole-repo formatting drift is
+      # handled separately (`npm run format`), so unrelated files do not fail this job.
+      - name: Check formatting of changed files
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          files=$(git diff --name-only --diff-filter=ACMR "origin/$BASE_REF...HEAD" \
+            | grep -E '\.(ts|tsx|js|jsx|json|css|md)$' || true)
+          if [ -z "$files" ]; then
+            echo "No changed files need formatting checks."
+            exit 0
+          fi
+          npx prettier --check $files
 
       # `stylish` output and `--pretty false` match the eslint/tsc problem matchers that
       # setup-node registers, so failures show up as inline annotations on the diff.
@@ -57,6 +76,10 @@ jobs:
       - name: Check for new unused exports
         if: ${{ !cancelled() }}
         run: npm run unused-exports:check
+
+      - name: Check for duplicate dependencies (React/Three.js)
+        if: ${{ !cancelled() }}
+        run: npm run check-duplicates
 
       - name: Comment lint and type-check results on PR
         if: ${{ github.event_name == 'pull_request' && !cancelled() }}
@@ -154,7 +177,21 @@ jobs:
         run: npm ci
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        id: test
+        run: |
+          set -o pipefail
+          npm run test:coverage 2>&1 | tee test-output.txt
+
+      - name: Report test failures to summary
+        if: failure()
+        run: |
+          {
+            echo '## ❌ Unit Test Failures'
+            echo ''
+            echo '```'
+            tail -n 100 test-output.txt || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage report
         if: always()
@@ -169,6 +206,32 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           json-summary-path: coverage/coverage-summary.json
+
+  storybook-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers for Storybook
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Storybook tests
+        run: npm run test:storybook
+
+      - name: Build Storybook (verifies compilation & assets)
+        run: npm run build-storybook
 
   build:
     runs-on: ubuntu-latest
@@ -269,7 +332,7 @@ jobs:
 
   deploy-preview:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    needs: [lint-and-typecheck, dependency-scan, test, build]
+    needs: [lint-and-typecheck, dependency-scan, test, storybook-test, build]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

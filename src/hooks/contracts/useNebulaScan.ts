@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react'
 import { SorobanContractClient, ContractError } from '@services/contracts'
 import { haptics } from '@/utils/haptics'
 import { getActiveStellarConfig } from '@/config/stellar'
+import { simulateContractTransaction } from '@utils/stellar/simulate'
+import type { ParsedSimulationResult, ContractNativeValue } from '@utils/stellar/responseParser'
 import type { ScanNebulaParams, ScanNebulaResult } from '@services/contracts'
 import type { XDR } from '@/types'
 
@@ -15,6 +17,7 @@ export interface UseNebulaScanReturn {
   isLoading: boolean
   error: string | null
   result: ScanNebulaResult | null
+  simulation: ParsedSimulationResult<ContractNativeValue> | null
   reset: () => void
 }
 
@@ -37,10 +40,14 @@ export function useNebulaScan({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ScanNebulaResult | null>(null)
+  const [simulation, setSimulation] = useState<ParsedSimulationResult<ContractNativeValue> | null>(
+    null
+  )
 
   const reset = useCallback(() => {
     setError(null)
     setResult(null)
+    setSimulation(null)
   }, [])
 
   const scan = useCallback(
@@ -48,6 +55,7 @@ export function useNebulaScan({
       setIsLoading(true)
       setError(null)
       setResult(null)
+      setSimulation(null)
 
       try {
         const config = getActiveStellarConfig()
@@ -55,6 +63,14 @@ export function useNebulaScan({
 
         const params: ScanNebulaParams = { nebulaId, scannerPublicKey }
         const unsignedXdr = await client.buildScanTransaction(params)
+
+        // Simulate before asking the wallet to sign, so a reverting contract
+        // call is caught and previewed instead of silently sent for signing.
+        const simulationResult = await simulateContractTransaction(unsignedXdr, { config })
+        setSimulation(simulationResult as ParsedSimulationResult<ContractNativeValue>)
+        if (simulationResult.status === 'error') {
+          throw new ContractError(simulationResult.error ?? 'Contract simulation failed.')
+        }
 
         const signedXdr = await signTransaction(unsignedXdr)
         if (!signedXdr) {
@@ -82,5 +98,5 @@ export function useNebulaScan({
     [contractId, signTransaction]
   )
 
-  return { scan, isLoading, error, result, reset }
+  return { scan, isLoading, error, result, simulation, reset }
 }

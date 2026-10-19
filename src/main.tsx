@@ -1,10 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import * as Sentry from '@sentry/react'
 import './index.css'
 import './styles/base.css'
 import './styles/mobile.css'
-import { initErrorTracking } from './services/errorTracking'
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'
 import { logger } from './services/logging'
 import { initializeMonitoring } from './services/monitoring'
 import { repairCorruptedSaveData } from './services/saveLoad'
@@ -33,9 +32,9 @@ const { default: App } = await import('./App.tsx')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Sentry.ErrorBoundary fallback={<p>An unexpected error occurred.</p>}>
+    <ErrorBoundary fallback={<p>An unexpected error occurred.</p>}>
       <App />
-    </Sentry.ErrorBoundary>
+    </ErrorBoundary>
   </StrictMode>
 )
 

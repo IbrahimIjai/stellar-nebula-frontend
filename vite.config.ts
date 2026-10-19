@@ -96,6 +96,11 @@ function brotliCompressionPlugin(): Plugin {
 }
 
 export default defineConfig({
+  esbuild: {
+    // Production bundles drop debug-level console output. console.warn/error are kept so
+    // real failures still reach the browser console and error reporting.
+    pure: ['console.log', 'console.debug', 'console.info'],
+  },
   plugins: [
     react(),
     inlineCriticalCss(),
@@ -115,7 +120,7 @@ export default defineConfig({
       // notification (issue #325) controls the moment of `skipWaiting`
       // instead of it happening silently in the background.
       registerType: 'prompt',
-      includeAssets: ['vite.svg', 'icon-*.png', 'icon-*.webp', '**/*.webp'],
+      includeAssets: ['vite.svg', 'icon-*.png', 'icon-*.webp', '**/*.webp', 'offline.html'],
       manifest: {
         name: 'Nebula Nomad - Space Exploration on Stellar',
         short_name: 'Nebula Nomad',
@@ -236,6 +241,10 @@ export default defineConfig({
     }),
   ],
   resolve: {
+    // Force a single copy of these packages even if a dependency bundles or
+    // resolves its own nested copy, preventing duplicate-React/Three.js bundle
+    // bloat and "Invalid hook call" errors from two React copies (#381).
+    dedupe: ['react', 'react-dom', 'three'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@components': resolve(__dirname, 'src/components'),
@@ -315,4 +324,10 @@ export default defineConfig({
   },
   // Image optimization (#258)
   assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.webp', '**/*.avif', '**/*.svg'],
+  server: {
+    headers: SECURITY_HEADERS,
+  },
+  preview: {
+    headers: SECURITY_HEADERS,
+  },
 })

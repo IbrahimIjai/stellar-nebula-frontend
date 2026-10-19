@@ -1,0 +1,132 @@
+name: Security Headers
+
+# Verifies the security headers required by #487 (clickjacking) and #489 (security headers).
+# The static job reads the header config files. The live job checks a deployed URL when one
+# is provided through the workflow_dispatch `url` input or the PRODUCTION_URL repository variable.
+
+on:
+  pull_request:
+    paths:
+      - 'vercel.json'
+      - 'nginx.conf'
+      - 'index.html'
+      - 'vite.config.ts'
+      - '.github/workflows/security-headers.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'vercel.json'
+      - 'nginx.conf'
+      - 'index.html'
+      - 'vite.config.ts'
+      - '.github/workflows/security-headers.yml'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Deployed URL to check, for example https://example.vercel.app'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  static-headers:
+    name: Verify configured headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check vercel.json
+        run: |
+          fail=0
+          expect() {
+            local key="$1" value="$2"
+            actual=$(jq -r --arg k "$key" '.headers[0].headers[] | select(.key == $k) | .value' vercel.json)
+            if [ -z "$actual" ]; then
+              echo "::error file=vercel.json::Missing header $key"
+              fail=1
+            elif [ -n "$value" ] && [ "$actual" != "$value" ]; then
+              echo "::error file=vercel.json::$key is '$actual', expected '$value'"
+              fail=1
+            fi
+          }
+          expect "X-Frame-Options" "DENY"
+          expect "X-Content-Type-Options" "nosniff"
+          expect "Referrer-Policy" "strict-origin-when-cross-origin"
+          expect "X-XSS-Protection" "0"
+          expect "Permissions-Policy" ""
+          expect "Strict-Transport-Security" ""
+          expect "Content-Security-Policy" ""
+          csp=$(jq -r '.headers[0].headers[] | select(.key == "Content-Security-Policy") | .value' vercel.json)
+          if ! grep -q "frame-ancestors 'none'" <<< "$csp"; then
+            echo "::error file=vercel.json::Content-Security-Policy must contain frame-ancestors 'none'"
+            fail=1
+          fi
+          exit $fail
+
+      - name: Check nginx.conf
+        run: |
+          fail=0
+          for pattern in \
+            'X-Frame-Options "DENY"' \
+            "frame-ancestors 'none'" \
+            'X-Content-Type-Options "nosniff"' \
+            'X-XSS-Protection "0"' \
+            'Referrer-Policy "strict-origin-when-cross-origin"' \
+            'Permissions-Policy'; do
+            if ! grep -qF "$pattern" nginx.conf; then
+              echo "::error file=nginx.conf::Missing $pattern"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Check dev and preview server headers
+        run: |
+          fail=0
+          for pattern in "'X-Frame-Options': 'DENY'" "frame-ancestors 'none'" "'X-Content-Type-Options': 'nosniff'"; do
+            if ! grep -qF "$pattern" vite.config.ts; then
+              echo "::error file=vite.config.ts::Missing $pattern"
+              fail=1
+            fi
+          done
+          exit $fail
+
+  live-headers:
+    name: Verify deployed headers
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.url != '' || vars.PRODUCTION_URL != '' }}
+    env:
+      TARGET_URL: ${{ github.event.inputs.url || vars.PRODUCTION_URL }}
+    steps:
+      - name: Fetch response headers
+        run: |
+          curl -sSI --max-time 30 "$TARGET_URL" > headers.txt
+          cat headers.txt
+
+      - name: Assert required headers
+        run: |
+          fail=0
+          require() {
+            if ! grep -qi "^$1:" headers.txt; then
+              echo "::error::Missing response header $1"
+              fail=1
+            fi
+          }
+          require_value() {
+            if ! grep -qi "^$1: $2" headers.txt; then
+              echo "::error::$1 is not '$2'"
+              fail=1
+            fi
+          }
+          require_value "X-Frame-Options" "DENY"
+          require_value "X-Content-Type-Options" "nosniff"
+          require "Referrer-Policy"
+          require "Permissions-Policy"
+          require "Content-Security-Policy"
+          if ! grep -qi "frame-ancestors 'none'" headers.txt; then
+            echo "::error::Content-Security-Policy is missing frame-ancestors 'none'"
+            fail=1
+          fi
+          exit $fail
