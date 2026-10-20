@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '../../../test/utils'
+import { render, screen, waitFor, within } from '@/test/utils'
 import { Modal } from '../Modal'
-import { ModalProvider, useModal } from '../../../contexts/ModalContext'
+import { ModalProvider, useModal } from '@/contexts/ModalContext'
 
 describe('Modal', () => {
   it('renders an accessible dialog labelled by its title', () => {

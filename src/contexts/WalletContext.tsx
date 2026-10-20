@@ -40,10 +40,16 @@ import {
 import { trackEvent } from '@/services/analytics'
 import { purgeApplicationState } from '@/utils/stateCleanup'
 import { setSessionPassphrase, saveEncryptedCopy } from '@/utils/storage'
+import { withTimeout, SIGNING_TIMEOUT_MS, SIGNING_TIMEOUT_MESSAGE } from '@/utils/stellar/timeout'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { SessionTimeoutWarning } from '@/components/Wallet/SessionTimeoutWarning'
 
 const log = createScopedLogger('WalletContext')
+
+/** Fails signing requests that the wallet never answers instead of waiting forever. */
+function withSignTimeout<T>(request: Promise<T>): Promise<T> {
+  return withTimeout(request, SIGNING_TIMEOUT_MS, SIGNING_TIMEOUT_MESSAGE)
+}
 
 // ─── Storage key ─────────────────────────────────────────────────────────────
 
@@ -521,36 +527,44 @@ export function WalletProvider({ children }: WalletProviderProps) {
             futurenet: 'Test SDF Future Network ; October 2022',
             mainnet: 'Public Global Stellar Network ; September 2015',
           }
-          signedXdr = await signTransactionWithFreighter(
-            xdr,
-            passphraseMap[walletState.network],
-            walletState.publicKey ?? undefined
+          signedXdr = await withSignTimeout(
+            signTransactionWithFreighter(
+              xdr,
+              passphraseMap[walletState.network],
+              walletState.publicKey ?? undefined
+            )
           )
         } else if (walletState.walletType === 'albedo') {
-          signedXdr = await signTransactionWithAlbedo(xdr, walletState.network)
+          signedXdr = await withSignTimeout(signTransactionWithAlbedo(xdr, walletState.network))
         } else if (walletState.walletType === 'xbull') {
           const passphraseMap: Record<StellarNetwork, string> = {
             testnet: 'Test SDF Network ; September 2015',
             futurenet: 'Test SDF Future Network ; October 2022',
             mainnet: 'Public Global Stellar Network ; September 2015',
           }
-          signedXdr = await signTransactionWithXBull(xdr, passphraseMap[walletState.network])
+          signedXdr = await withSignTimeout(
+            signTransactionWithXBull(xdr, passphraseMap[walletState.network])
+          )
         } else if (walletState.walletType === 'walletconnect') {
           const wcSession = loadWalletConnectSession()
           if (!wcSession) {
             throw new Error('WalletConnect session not found. Please reconnect.')
           }
-          signedXdr = await signTransactionWithWalletConnect(xdr, walletState.network, wcSession)
+          signedXdr = await withSignTimeout(
+            signTransactionWithWalletConnect(xdr, walletState.network, wcSession)
+          )
         } else if (walletState.walletType === 'ledger') {
           const passphraseMap: Record<StellarNetwork, string> = {
             testnet: 'Test SDF Network ; September 2015',
             futurenet: 'Test SDF Future Network ; October 2022',
             mainnet: 'Public Global Stellar Network ; September 2015',
           }
-          signedXdr = await signTransactionWithLedger(
-            xdr,
-            passphraseMap[walletState.network],
-            walletState.publicKey
+          signedXdr = await withSignTimeout(
+            signTransactionWithLedger(
+              xdr,
+              passphraseMap[walletState.network],
+              walletState.publicKey
+            )
           )
         } else {
           throw new Error(`Signing not supported for wallet type "${walletState.walletType}"`)

@@ -142,10 +142,7 @@ const cacheService = getTransactionCacheService()
 const transactions = await cacheService.fetchTransactions(horizonServer, accountId)
 
 // Fetch only new transactions
-const newTransactions = await cacheService.fetchNewTransactions(
-  horizonServer,
-  accountId
-)
+const newTransactions = await cacheService.fetchNewTransactions(horizonServer, accountId)
 
 // Check cache validity
 if (cacheService.isCacheValid()) {
@@ -208,12 +205,7 @@ Fetch only transactions after a specific ID (for incremental updates).
 ```typescript
 import { fetchIncrementalTransactions } from '@/utils/horizon-utils'
 
-const newTransactions = await fetchIncrementalTransactions(
-  horizonServer,
-  accountId,
-  lastSeenId,
-  50
-)
+const newTransactions = await fetchIncrementalTransactions(horizonServer, accountId, lastSeenId, 50)
 ```
 
 #### `getLatestTransaction`
@@ -261,6 +253,45 @@ const tx = await getTransactionById(horizonServer, transactionHash)
 - Cache results in localStorage
 - Debounce manual refetch requests
 
+## Signing Timeout and Pending UI (#446)
+
+Signing a transaction waits on the user to approve it in their wallet — if they
+walk away, it would otherwise hang forever.
+
+### Timeout
+
+- Every signing path (Freighter, Albedo, xBull, WalletConnect, Ledger) is
+  wrapped with `withTimeout()` from `src/utils/stellar/timeout.ts`.
+- `SIGNING_TIMEOUT_MS` is **60 seconds**. On expiry the request rejects with
+  `SIGNING_TIMEOUT_MESSAGE`, which the UI surfaces as a retryable error.
+- The underlying wallet request cannot be cancelled, but the app stops waiting
+  and lets the user retry.
+
+```typescript
+import { withTimeout, SIGNING_TIMEOUT_MS, SIGNING_TIMEOUT_MESSAGE } from '@/utils/stellar/timeout'
+
+const signedXdr = await withTimeout(
+  signTransaction(xdr),
+  SIGNING_TIMEOUT_MS,
+  SIGNING_TIMEOUT_MESSAGE
+)
+```
+
+### Pending UI
+
+- `TransactionPending` (`src/components/Transaction/TransactionPending.tsx`)
+  renders an accessible `role="status"` / `aria-live="polite"` notice while the
+  wallet is asked to sign, including the 60-second timeout hint.
+- `ConfirmModal` shows it automatically while `isSubmitting` is true.
+- The upgrade flow surfaces the same state via its status message ("awaiting
+  your wallet signature").
+
+### Recovery
+
+The timeout error is shown in the same surface as any signing error; the user
+retries by confirming again once the wallet is ready (unlocked, correct
+network).
+
 ## Error Handling
 
 All transaction operations include proper error handling:
@@ -279,3 +310,4 @@ try {
 
 - #450: No Transaction Fee Estimation
 - #449: Transaction History Not Cached
+- #446: Transaction Signing No Timeout

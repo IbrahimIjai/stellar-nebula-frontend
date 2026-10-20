@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '../../../test/utils'
+import { render, screen, waitFor } from '@/test/utils'
 import { Modal } from '../Modal'
 import { HelpModal } from '../../Help/HelpModal'
 

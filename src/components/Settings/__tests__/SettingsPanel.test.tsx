@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '../../../test/utils'
+import { render, screen, fireEvent } from '@/test/utils'
 import SettingsPanel from '../SettingsPanel'
-import { useSettingsStore } from '../../../store/settingsStore'
+import { useSettingsStore } from '@/store/settingsStore'
 
 function renderPanel(onClose?: () => void) {
   return render(<SettingsPanel onClose={onClose} />)

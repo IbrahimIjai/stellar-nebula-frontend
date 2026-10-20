@@ -57,15 +57,18 @@ describe('Keyboard navigation — Navigation header', () => {
 
     const { WalletProvider } = await import('@/contexts/WalletContext')
     const { NotificationProvider } = await import('@/contexts/NotificationContext')
+    const { ThemeProvider } = await import('@/contexts/ThemeContext')
     const { default: Navigation } = await import('@/components/Navigation')
 
     render(
       <MemoryRouter>
-        <WalletProvider>
-          <NotificationProvider>
-            <Navigation />
-          </NotificationProvider>
-        </WalletProvider>
+        <ThemeProvider>
+          <WalletProvider>
+            <NotificationProvider>
+              <Navigation />
+            </NotificationProvider>
+          </WalletProvider>
+        </ThemeProvider>
       </MemoryRouter>
     )
 
@@ -93,15 +96,18 @@ describe('Keyboard navigation — Navigation header', () => {
 
     const { WalletProvider } = await import('@/contexts/WalletContext')
     const { NotificationProvider } = await import('@/contexts/NotificationContext')
+    const { ThemeProvider } = await import('@/contexts/ThemeContext')
     const { default: Navigation } = await import('@/components/Navigation')
 
     render(
       <MemoryRouter>
-        <WalletProvider>
-          <NotificationProvider>
-            <Navigation />
-          </NotificationProvider>
-        </WalletProvider>
+        <ThemeProvider>
+          <WalletProvider>
+            <NotificationProvider>
+              <Navigation />
+            </NotificationProvider>
+          </WalletProvider>
+        </ThemeProvider>
       </MemoryRouter>
     )
 
@@ -118,15 +124,18 @@ describe('Keyboard navigation — Navigation header', () => {
 
     const { WalletProvider } = await import('@/contexts/WalletContext')
     const { NotificationProvider } = await import('@/contexts/NotificationContext')
+    const { ThemeProvider } = await import('@/contexts/ThemeContext')
     const { default: Navigation } = await import('@/components/Navigation')
 
     render(
       <MemoryRouter>
-        <WalletProvider>
-          <NotificationProvider>
-            <Navigation />
-          </NotificationProvider>
-        </WalletProvider>
+        <ThemeProvider>
+          <WalletProvider>
+            <NotificationProvider>
+              <Navigation />
+            </NotificationProvider>
+          </WalletProvider>
+        </ThemeProvider>
       </MemoryRouter>
     )
 

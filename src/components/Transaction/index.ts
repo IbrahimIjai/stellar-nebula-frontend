@@ -1,4 +1,6 @@
 export { ConfirmModal } from './ConfirmModal'
+export { TransactionPending } from './TransactionPending'
+export type { TransactionPendingProps } from './TransactionPending'
 export { TransactionPreview } from './TransactionPreview'
 export { TransactionRetryButton } from './TransactionRetryButton'
 export type { TransactionRetryButtonProps } from './TransactionRetryButton'

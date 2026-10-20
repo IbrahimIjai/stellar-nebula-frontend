@@ -60,6 +60,20 @@ export default defineConfig([
       // calls are errors, except warn/error which the logger itself may emit.
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'jsx-a11y/heading-has-content': 'error',
+      // Enforce `@/` path aliases over deep relative imports (../../../…)
+      // so refactors inside src/ don't break import paths across the codebase.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '\\.\\./\\.\\./\\.\\./',
+              message:
+                'Deep relative imports (../../../) are not allowed. Use the @/ path alias instead.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

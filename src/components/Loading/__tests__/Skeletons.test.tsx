@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '../../../test/utils'
+import { render, screen } from '@/test/utils'
 import { SkeletonDashboard } from '../SkeletonDashboard'
 import { SkeletonNebulaView } from '../SkeletonNebulaView'
 import { SkeletonMarketplace } from '../SkeletonMarketplace'

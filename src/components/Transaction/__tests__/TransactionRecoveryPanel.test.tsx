@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '../../../test/utils'
+import { render, screen, waitFor } from '@/test/utils'
 import { TransactionRecoveryPanel } from '../TransactionRecoveryPanel'
 import { useTransactionRecovery } from '@/hooks/useTransactionRecovery'
 import { useGameStore, initialGameState } from '@/store/gameStore'

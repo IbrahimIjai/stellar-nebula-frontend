@@ -1,14 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen, act } from '../../../test/utils'
-import { WalletProvider } from '../../../contexts/WalletContext'
+import { render, screen, act } from '@/test/utils'
+import { WalletProvider } from '@/contexts/WalletContext'
 import ShipDashboard from '../ShipDashboard'
-import {
-  useShipStore,
-  useResourceStore,
-  initialShipState,
-  initialResourceState,
-} from '../../../store'
+import { useShipStore, useResourceStore, initialShipState, initialResourceState } from '@/store'
 
 vi.mock('@config/env', () => ({
   env: {
@@ -23,7 +18,7 @@ vi.mock('@config/env', () => ({
 }))
 
 // Mock analytics to prevent telemetry calls in tests
-vi.mock('../../../services/analytics', () => ({
+vi.mock('@/services/analytics', () => ({
   trackEvent: vi.fn(),
   trackPageView: vi.fn(),
   trackError: vi.fn(),

@@ -43,6 +43,13 @@ a {
   }
 }
 
+/* Shared spinner rotation for inline-style spinners (TransactionPending, WalletDisplay). */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes balanceGlow {
   0% {
     box-shadow: 0 0 0 rgba(50, 214, 165, 0);
@@ -116,5 +123,20 @@ a {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Smooth color fade when the theme toggle flips dark/light (added briefly by
+   ThemeContext). Scoped behind no-preference so reduced-motion users get an
+   instant switch. */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      color 0.3s ease !important;
   }
 }

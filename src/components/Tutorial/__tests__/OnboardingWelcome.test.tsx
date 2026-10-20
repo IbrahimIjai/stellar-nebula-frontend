@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '../../../test/utils'
+import { render, screen, fireEvent } from '@/test/utils'
 import { OnboardingWelcome } from '../OnboardingWelcome'
-import { useTutorialStore } from '../../../store/tutorialStore'
+import { useTutorialStore } from '@/store/tutorialStore'
 
 describe('OnboardingWelcome', () => {
   beforeEach(() => {

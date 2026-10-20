@@ -159,6 +159,25 @@ export function handleWalletConnectionError(error: unknown, walletType: WalletTy
     }
   }
 
+  // Generic scenarios that apply to any wallet (connection or signing).
+  if (lowerMessage.includes('locked') || lowerMessage.includes('unlock')) {
+    return {
+      code: 'WALLET_LOCKED',
+      message: `${walletType} wallet is locked`,
+      helpText: 'Open your wallet extension, unlock it with your password, then try again.',
+      isRetryable: true,
+    }
+  }
+
+  if (lowerMessage.includes('timed out') || lowerMessage.includes('timeout')) {
+    return {
+      code: 'REQUEST_TIMEOUT',
+      message: 'The wallet did not respond in time',
+      helpText: 'The request expired before the wallet responded. Please try again.',
+      isRetryable: true,
+    }
+  }
+
   return {
     code: 'UNKNOWN_ERROR',
     message: message || `Failed to connect ${walletType} wallet`,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '../../../test/utils'
+import { render, screen, fireEvent } from '@/test/utils'
 import { MemoryRouter } from 'react-router-dom'
-import { WalletProvider } from '../../../contexts/WalletContext'
+import { WalletProvider } from '@/contexts/WalletContext'
 import Header from '../Header'
 
 vi.mock('@services/wallets', async () => ({
