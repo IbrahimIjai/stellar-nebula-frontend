@@ -196,6 +196,7 @@ async function analyze() {
   if (UPDATE_BASELINE || !baseline) {
     await fs.writeFile(BASELINE_FILE, JSON.stringify(summary, null, 2))
     console.log(`📌 Baseline ${UPDATE_BASELINE ? 'updated' : 'created'} at ${BASELINE_FILE}`)
+    console.log('ℹ️  Baseline successfully updated — exiting cleanly')
     return
   }
 

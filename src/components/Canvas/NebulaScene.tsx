@@ -11,6 +11,9 @@ import { rollScanReward, rollResourceAmount } from '../../utils/rarity'
 import { createRNG } from '../../utils/procedural/nebula'
 import { SCAN_COOLDOWN_MS, SCAN_CHANNEL_DURATION_SEC } from '../../constants/game'
 
+import { calculateAdaptiveParticleCount, isMobileDevice } from '@/utils/three-performance'
+import { useSettingsStore } from '@/store/settingsStore'
+
 const NEBULA_SEED = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2'
 
 function NebulaSphere() {
@@ -69,14 +72,19 @@ export function NebulaScene({
   const { getRemainingSeconds, startCooldown, canScan } = useScanCooldown()
   const scanRngRef = useRef(createInitialRng())
 
-  const nebulaConfig = useMemo(
-    () => ({
+  const graphicsQuality = useSettingsStore((state) => state.graphicsQuality)
+  const particleCountMultiplier = useSettingsStore((state) => state.particleCountMultiplier)
+  const isMobile = useMemo(() => isMobileDevice(), [])
+
+  const nebulaConfig = useMemo(() => {
+    const base = performanceMode ? 4000 : 12000
+    const adaptive = calculateAdaptiveParticleCount(base, graphicsQuality, isMobile)
+    return {
       seed: NEBULA_SEED,
-      particleCount: performanceMode ? 5000 : 15000,
+      particleCount: Math.round(adaptive * (particleCountMultiplier ?? 1.0)),
       radius: 40,
-    }),
-    [performanceMode]
-  )
+    }
+  }, [performanceMode, graphicsQuality, isMobile, particleCountMultiplier])
 
   const { geometry: nebulaGeometry } = useProceduralNebula(nebulaConfig)
 

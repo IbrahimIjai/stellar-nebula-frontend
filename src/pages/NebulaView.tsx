@@ -1,5 +1,9 @@
-import { useCallback, useState } from 'react'
-import { NebulaCanvas } from '@components/Canvas'
+import { useCallback, useState, lazy, Suspense } from 'react'
+import { SkeletonNebulaView } from '@components/Loading'
+
+const NebulaCanvas = lazy(() =>
+  import('@components/Canvas').then((m) => ({ default: m.NebulaCanvas }))
+)
 import { ConnectModal, WalletDisplay } from '@components/Wallet'
 import { Inventory } from '@components/Resources/Inventory'
 import { ShareButton } from '@components/Social/ShareButton'
@@ -97,7 +101,9 @@ function NebulaView() {
       </section>
 
       <div className="nebula-view-canvas">
-        <NebulaCanvas onScanComplete={handleHarvest} />
+        <Suspense fallback={<SkeletonNebulaView />}>
+          <NebulaCanvas onScanComplete={handleHarvest} />
+        </Suspense>
       </div>
 
       <div className="nebula-resource-grid">

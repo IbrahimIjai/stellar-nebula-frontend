@@ -11,58 +11,23 @@ import { initWebVitalsMonitoring } from './hooks/useWebVitals'
 import { env } from './config'
 import { preloadCriticalAssets } from './utils/preload'
 
-// Preload critical fonts, icons, and hero assets early to improve LCP and CLS (#379)
+// Preload critical fonts, icons, and hero assets early to improve LCP and CLS (#379, #354)
 preloadCriticalAssets()
 
-// Validate/repair raw localStorage before any zustand store module (pulled
-// in transitively by App) hydrates from it, so a corrupted save can't crash
-// startup.
-const saveRepairReport = repairCorruptedSaveData()
-if (saveRepairReport.cleared.length > 0) {
-  logger.warn('Corrupted save data cleared on startup', {
-    clearedCount: saveRepairReport.cleared.length,
-    keys: saveRepairReport.cleared.map((c) => c.key).join(', '),
-  })
+// Validate/repair raw localStorage before any zustand store module hydrates
+try {
+  const saveRepairReport = repairCorruptedSaveData()
+  if (saveRepairReport.cleared.length > 0) {
+    logger.warn('Corrupted save data cleared on startup', {
+      clearedCount: saveRepairReport.cleared.length,
+      keys: saveRepairReport.cleared.map((c) => c.key).join(', '),
+    })
+  }
+} catch {
+  // Graceful fallback
 }
 
-// Initialize structured logging first
-if (env.LOG_LEVEL) {
-  logger.setLogLevel(env.LOG_LEVEL)
-}
-
-logger.info('Application starting', {
-  environment: env.NODE_ENV,
-  version: env.APP_VERSION,
-  appName: env.APP_NAME,
-})
-
-// Initialize monitoring services (Sentry + LogRocket). Not awaited: Sentry and
-// LogRocket are loaded via dynamic import (see services/sentryClient.ts) in
-// their own async chunk so they never block the initial render (#382). Any
-// errors thrown before this resolves are still caught by the ErrorBoundary
-// below and queued for Sentry once it finishes loading.
-if (env.ENABLE_MONITORING) {
-  void initializeMonitoring({
-    sentryDsn: env.SENTRY_DSN,
-    sentryEnvironment: env.NODE_ENV,
-    sentryRelease: env.APP_VERSION,
-    sentrySampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    sentryReplaySessionRate: env.NODE_ENV === 'production' ? 0.1 : 0.5,
-    sentryReplayErrorRate: 1.0,
-    logRocketAppId: env.LOGROCKET_APP_ID,
-    enablePerformanceMonitoring: true,
-  })
-}
-
-// Initialize Web Vitals performance monitoring (#365)
-initWebVitalsMonitoring()
-
-logger.info('Monitoring and logging initialized')
-
-// Imported dynamically (rather than statically at the top of this file) so
-// that repairCorruptedSaveData() above has already run before App - and the
-// zustand store modules it transitively imports - are evaluated and hydrate
-// from localStorage.
+// Immediate render of App shell for minimal FCP, LCP, and TTI (#354)
 const { default: App } = await import('./App.tsx')
 
 createRoot(document.getElementById('root')!).render(
@@ -72,3 +37,62 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>
 )
+
+/**
+ * Deferred non-critical background services (#354) and idle Three.js preloading (#353).
+ * Offloaded to idle cycles to keep First Contentful Paint and TTI optimal.
+ */
+function initializeDeferredServices() {
+  // Structured logging
+  if (env.LOG_LEVEL) {
+    logger.setLogLevel(env.LOG_LEVEL)
+  }
+
+  logger.info('Application started', {
+    environment: env.NODE_ENV,
+    version: env.APP_VERSION,
+    appName: env.APP_NAME,
+  })
+
+  // Monitoring services (Sentry + LogRocket)
+  if (env.ENABLE_MONITORING) {
+    initializeMonitoring({
+      sentryDsn: env.SENTRY_DSN,
+      sentryEnvironment: env.NODE_ENV,
+      sentryRelease: env.APP_VERSION,
+      sentrySampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      sentryReplaySessionRate: env.NODE_ENV === 'production' ? 0.1 : 0.5,
+      sentryReplayErrorRate: 1.0,
+      logRocketAppId: env.LOGROCKET_APP_ID,
+      enablePerformanceMonitoring: true,
+    })
+  }
+
+  // Direct Sentry initialization
+  const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN
+  if (SENTRY_DSN) {
+    initErrorTracking({
+      dsn: SENTRY_DSN,
+      environment: import.meta.env.VITE_APP_ENV ?? 'development',
+      release: import.meta.env.VITE_APP_VERSION || undefined,
+    })
+  }
+
+  // Web Vitals monitoring
+  initWebVitalsMonitoring()
+
+  // Lazy-load Three.js canvas modules during idle time (#353)
+  if (typeof window !== 'undefined') {
+    import('@components/Canvas').catch(() => {
+      // Ignored if route already navigated
+    })
+  }
+}
+
+if (typeof window !== 'undefined') {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(initializeDeferredServices, { timeout: 2500 })
+  } else {
+    setTimeout(initializeDeferredServices, 150)
+  }
+}

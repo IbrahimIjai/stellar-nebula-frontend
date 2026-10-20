@@ -45,7 +45,11 @@ export function ProceduralNebulaField({
     if (pointsRef.current) {
       pointsRef.current.material = shaderMaterial
     }
-  }, [shaderMaterial])
+    return () => {
+      bufferGeometry.dispose()
+      shaderMaterial.dispose()
+    }
+  }, [bufferGeometry, shaderMaterial])
 
   useFrame((_, delta) => {
     timeRef.current += delta

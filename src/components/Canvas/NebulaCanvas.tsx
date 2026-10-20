@@ -1,7 +1,6 @@
 import { Suspense, memo, useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Preload } from '@react-three/drei'
-import { disposeThreeObject } from '@/utils/threejs/cleanup'
 import { NebulaScene } from './NebulaScene'
 import { CameraControls } from './CameraControls'
 import { FpsCounter } from './FpsCounter'
@@ -27,13 +26,15 @@ import { CanvasLiveRegion, CanvasSkipLink } from './CanvasStatusLayer'
 import { useDeviceHints } from './useDeviceHints'
 import { useScanPointKeyboardNav } from './useScanPointKeyboardNav'
 
+import { cleanScene } from '@/utils/three-cleanup'
+import { getQualityPreset } from '@/utils/three-performance'
+import { useSettingsStore } from '@/store/settingsStore'
+
 function CanvasResourceCleanup() {
   const { gl, scene } = useThree()
   useEffect(() => {
     return () => {
-      disposeThreeObject(scene)
-      gl.dispose()
-      gl.forceContextLoss()
+      cleanScene(scene, gl)
     }
   }, [gl, scene])
   return null
@@ -67,6 +68,37 @@ function NebulaCanvas({
   const isMotionReduced = reducedMotionProp ?? (prefersReducedMotion || isPaused)
   const effectivePerformanceMode = performanceMode || isMotionReduced
 
+  const deviceHints = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return {
+        isMobile: false,
+      }
+    }
+
+    const nav = navigator as Navigator & {
+      userAgentData?: {
+        mobile?: boolean
+      }
+    }
+
+    return {
+      isMobile:
+        window.matchMedia('(pointer: coarse)').matches ||
+        window.matchMedia('(max-width: 768px)').matches ||
+        nav.userAgentData?.mobile === true,
+    }
+  }, [])
+
+  const graphicsQuality = useSettingsStore((state) => state.graphicsQuality)
+  const fpsMonitoringEnabled = useSettingsStore((state) => state.fpsMonitoringEnabled)
+  const lowPowerMode = useSettingsStore((state) => state.lowPowerMode)
+
+  const qualityPreset = useMemo(() => {
+    return getQualityPreset(graphicsQuality, deviceHints.isMobile)
+  }, [graphicsQuality, deviceHints.isMobile])
+
+  const shouldShowFps = showFps || fpsMonitoringEnabled
+
   const [focusedPointId, setFocusedPointId] = useState<string | null>(null)
   const [isWrapperFocused, setIsWrapperFocused] = useState(false)
   const [liveMessage, setLiveMessage] = useState('')
@@ -86,8 +118,6 @@ function NebulaCanvas({
     return map
     // getRemainingSeconds is stable when scanCooldowns haven't changed
   }, [getRemainingSeconds])
-
-  const deviceHints = useDeviceHints()
 
   const handleScan = useCallback(
     (pointId: string, resourceType: ResourceType, amount: number) => {
@@ -192,7 +222,7 @@ function NebulaCanvas({
         scan has a cooldown period.
       </p>
 
-      {showFps && <FpsCounter />}
+      {shouldShowFps && <FpsCounter />}
       {showMotionControls && (
         <div
           className="nebula-motion-controls"
@@ -210,8 +240,12 @@ function NebulaCanvas({
       <Canvas
         frameloop={!isPageVisible || isMotionReduced ? 'never' : 'always'}
         camera={{ position: [0, 0, 5], fov: 60, near: 0.1, far: 1000 }}
-        gl={{ antialias: !deviceHints.isMobile, powerPreference: 'high-performance' }}
-        dpr={[1, deviceHints.isMobile ? 1.5 : 2]}
+        gl={{
+          antialias: qualityPreset.antialias && !lowPowerMode,
+          powerPreference: qualityPreset.powerPreference,
+          precision: qualityPreset.precision,
+        }}
+        dpr={[1, lowPowerMode ? 1.0 : qualityPreset.maxPixelRatio]}
         style={{ width: '100%', height: '100%' }}
         aria-hidden="true"
       >
@@ -227,12 +261,14 @@ function NebulaCanvas({
             focusedPointId={focusedPointId}
           />
           <BloomEffect
-            enabled={bloomEnabled && !isMotionReduced}
+            enabled={
+              bloomEnabled && qualityPreset.bloomEnabled && !isMotionReduced && !lowPowerMode
+            }
             intensity={bloomIntensity}
             performanceMode={effectivePerformanceMode}
           />
           <DepthOfFieldEffect
-            enabled={!effectivePerformanceMode}
+            enabled={qualityPreset.dofEnabled && !effectivePerformanceMode && !lowPowerMode}
             performanceMode={effectivePerformanceMode}
           />
           <CameraControls
@@ -241,7 +277,7 @@ function NebulaCanvas({
             reducedMotion={isMotionReduced}
           />
           <CanvasResourceCleanup />
-          {showFps && <RenderStatsCollector />}
+          {shouldShowFps && <RenderStatsCollector />}
           <Preload all />
         </Suspense>
       </Canvas>
